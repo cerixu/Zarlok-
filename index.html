@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pl" data-theme="auto" data-mode="pro">
+<head>
+  <meta charset="utf-8">
+  <title>Kucharzyna</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Kucharzyna — prywatny notatnik szefa kuchni: receptury, przeliczanie, procenty piekarskie, food cost, zakupy. Działa offline.">
+
+  <!-- Kolor paska systemowego (jasny / ciemny) -->
+  <meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- iOS: aplikacja na ekranie początkowym -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kucharzyna">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Motyw ustawiany zanim pojawi się cokolwiek (brak błysku). Źródłem prawdy jest IndexedDB. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('k:theme'), m = localStorage.getItem('k:mode'), z = localStorage.getItem('k:tap'), s = localStorage.getItem('k:ts'), g = localStorage.getItem('k:glass');
+        var d = document.documentElement;
+        if (t) d.setAttribute('data-theme', t);
+        if (m) d.setAttribute('data-mode', m);
+        if (z) d.setAttribute('data-tap', z);
+        if (s) d.style.setProperty('--ts', String(+s / 100));
+        if (g) d.style.setProperty('--glass', String(+g / 100));
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div id="app">
+    <main id="view" aria-live="polite"></main>
+    <nav id="tabbar" aria-label="Główna nawigacja"></nav>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="overlays"></div>
+  <noscript><p style="padding:24px;font:16px system-ui">Kucharzyna wymaga włączonego JavaScriptu.</p></noscript>
+  <div id="boot" class="boot" aria-hidden="true"><div class="boot-mark">👨‍🍳</div><div class="boot-name">Kucharzyna</div></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
