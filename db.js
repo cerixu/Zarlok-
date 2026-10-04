@@ -11,6 +11,7 @@ const DB_VERSION = 1;
 const FALLBACK_CACHE = 'zarlok-storage-v1';
 const FALLBACK_PREFIX = 'zarlok-store:';
 const OPEN_TIMEOUT = 2500;
+const fallbackUrl = (name) => new URL('__zarlok_storage__/' + encodeURIComponent(name), location.href).href;
 
 export const STORES = {
   recipes: 'id',
@@ -80,7 +81,7 @@ async function loadFallbackState() {
     try {
       const cache = await caches.open(FALLBACK_CACHE);
       for (const name of Object.keys(STORES)) {
-        const req = new Request(location.href.split('#')[0] + '::' + FALLBACK_PREFIX + name);
+        const req = new Request(fallbackUrl(name));
         const res = await cache.match(req);
         if (!res) continue;
         const arr = await res.json();
@@ -125,7 +126,7 @@ async function persistFallbackStore(name) {
   if (st.persistence === 'cache') {
     try {
       const cache = await caches.open(FALLBACK_CACHE);
-      const req = new Request(location.href.split('#')[0] + '::' + FALLBACK_PREFIX + name);
+      const req = new Request(fallbackUrl(name));
       await cache.put(req, new Response(JSON.stringify(values), {
         headers: { 'content-type': 'application/json; charset=utf-8' },
       }));
