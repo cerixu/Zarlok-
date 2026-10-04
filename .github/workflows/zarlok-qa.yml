@@ -1,0 +1,33 @@
+name: Żarłok QA
+
+on:
+  push:
+    branches:
+      - main
+      - 'phase-*'
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in *.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+      - name: Check application version
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP=$(grep -oE "APP_VERSION = '[^']+'" util.js | sed "s/.*'//;s/'//")
+          SW=$(grep -oE "VERSION = 'kucharzyna-[^']+'" sw.js | sed "s/.*kucharzyna-//;s/'//")
+          test "$APP" = "$SW"
+          echo "Version OK: $APP"
