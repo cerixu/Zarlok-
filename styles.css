@@ -1110,7 +1110,12 @@ body.kb-open .guidebar { padding-bottom: 10px; }
 }
 
 /* Głębia tła zamiast płaskiego koloru. */
-:root[data-theme="dark"]:not([data-mode="amateur"]) #app,
+:root[data-theme="dark"]:not([data-mode="amateur"]) #app {
+  background:
+    radial-gradient(90% 45% at 50% -12%, rgba(255,178,70,.10), transparent 70%),
+    radial-gradient(60% 35% at 100% 72%, rgba(255,102,52,.06), transparent 74%),
+    #09090b;
+}
 @media (prefers-color-scheme: dark) {
   :root[data-theme="auto"]:not([data-mode="amateur"]) #app {
     background:
