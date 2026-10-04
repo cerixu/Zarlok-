@@ -110,7 +110,7 @@ export function detailView({ id }) {
         h('h2', { class: 'recipe-hero-title' }, r.name || 'Bez nazwy'),
         r.description ? h('p', { class: 'recipe-hero-desc' }, r.description) : null,
         h('div', { class: 'recipe-hero-meta' },
-          base().rating ? h('span', { class: 'hero-rating' }, icon('star', 16), fmtNum(base().rating, 1), base().openCount ? `(${base().openCount})` : '') : null,
+          base().rating ? h('span', { class: 'hero-rating' }, icon('star', 16), fmtNum(base().rating, 1)) : null,
           r.servings ? h('span', null, icon('users', 16), `${fmtNum(r.servings, 1)} porcji`) : null,
           (r.prepTime || r.cookTime) ? h('span', null, icon('clock', 16), fmtMinutes((r.prepTime || 0) + (r.cookTime || 0))) : null,
           r.temperature ? h('span', null, icon('thermo', 16), r.temperature) : null),
