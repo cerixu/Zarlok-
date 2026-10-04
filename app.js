@@ -2,7 +2,7 @@
    app.js — start aplikacji: baza, ustawienia, motyw, nawigacja dolna,
    obsługa klawiatury iOS (visualViewport), trasy, service worker.
    ========================================================================== */
-import { openDB } from './db.js';
+import { openDB, storageMode } from './db.js';
 import { loadAll, state, subscribe, getSetting } from './recipes.js';
 import { h, icon, toast, $ } from './ui.js';
 import { route, startRouter, navigate } from './router.js';
@@ -151,7 +151,7 @@ function fatal(err) {
   if (bootEl) bootEl.remove();
   $('#view').replaceChildren(h('div', { class: 'screen' }, h('div', { class: 'scroll' }, h('div', { class: 'content' },
     h('div', { class: 'empty' }, h('div', { class: 'empty-emoji' }, '⚠️'), h('h2', null, 'Nie mogę otworzyć bazy danych'),
-      h('p', { class: 'muted' }, 'Kucharzyna zapisuje dane lokalnie (IndexedDB). Sprawdź, czy przeglądarka nie działa w trybie prywatnym ani nie blokuje pamięci witryny, i uruchom ponownie.'),
+      h('p', { class: 'muted' }, 'Aplikacja nie mogła otworzyć magazynu danych. Spróbuj ponownie po zamknięciu innych kart tej aplikacji; jeżeli problem dotyczy Safari, Żarłok podczas normalnego startu korzysta z magazynu zgodności zamiast zatrzymywać aplikację.'),
       h('p', { class: 'muted small' }, String(err && err.message || err)))))));
 }
 
@@ -162,6 +162,11 @@ async function boot() {
   } catch (e) { fatal(e); return; }
 
   applyAppearance();
+  const storeMode = storageMode();
+  if (storeMode !== 'indexeddb') {
+    const label = storeMode === 'fallback-cache' ? 'Cache API' : storeMode === 'fallback-localStorage' ? 'localStorage' : 'pamięć sesyjna';
+    toast(`Tryb zgodności pamięci: ${label}. Zrób kopię JSON.`, { ms: 5000 });
+  }
   subscribe((type) => {
     if (type === 'settings') applyAppearance();
     if (type === 'shopping') updateBadge();

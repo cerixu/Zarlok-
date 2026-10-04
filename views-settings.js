@@ -10,6 +10,7 @@ import { state, getSetting, setSetting, restoreSeeds, listRecipes } from './reci
 import { openCategoryManager } from './views-recipes.js';
 import { exportBackup, readBackupFile, importBackup, wipeAll, daysSinceBackup } from './backup.js';
 import { checkForUpdate, swVersion, storageInfo, requestPersist, isStandalone, isIOS, swSupported } from './pwa.js';
+import { storageMode } from './db.js';
 import { searchGoogle, googleConfigured } from './search.js';
 import { textInput } from './ui.js';
 import { APP_VERSION, fmtDateTime } from './util.js';
@@ -158,7 +159,8 @@ export function settingsView() {
       h('div', { class: 'kv-row' }, h('span', null, 'Zajęte miejsce'), h('span', { class: 'num' }, mb(si.usage))),
       h('div', { class: 'kv-row' }, h('span', null, 'Trwały magazyn'), h('span', { class: 'num' }, si.persisted ? 'tak' : 'nie (kopia JSON chroni dane)')),
       h('div', { class: 'kv-row' }, h('span', null, 'Połączenie'), h('span', { class: 'num' }, navigator.onLine ? 'online' : 'offline')),
-      h('div', { class: 'kv-row' }, h('span', null, 'Tryb'), h('span', { class: 'num' }, isStandalone() ? 'aplikacja (ekran początkowy)' : 'karta przeglądarki')));
+      h('div', { class: 'kv-row' }, h('span', null, 'Tryb'), h('span', { class: 'num' }, isStandalone() ? 'aplikacja (ekran początkowy)' : 'karta przeglądarki')),
+      h('div', { class: 'kv-row' }, h('span', null, 'Magazyn danych'), h('span', { class: 'num' }, ({ indexeddb: 'IndexedDB', 'fallback-cache': 'Cache API (zgodność Safari)', 'fallback-localStorage': 'localStorage (zgodność)', 'memory-fallback': 'pamięć sesyjna (tymczasowa)' }[storageMode()] || 'sprawdzanie'))));
     const v = await swVersion();
     swRow.textContent = !swSupported() ? 'niedostępny' : v ? `aktywny (${v})` : 'jeszcze się instaluje';
   }
