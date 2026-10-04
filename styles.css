@@ -1148,6 +1148,8 @@ body.kb-open .guidebar { padding-bottom: 10px; }
   box-shadow: var(--z-shadow-soft);
   -webkit-backdrop-filter: var(--z-blur);
   backdrop-filter: var(--z-blur);
+  position: relative;
+  overflow: hidden;
 }
 
 :root[data-theme="dark"]:not([data-mode="amateur"]) .card::before,
