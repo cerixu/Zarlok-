@@ -62,14 +62,35 @@ export function recipeTile(r) {
 
 /** Karta receptury (lista, ekran startowy). */
 export function recipeCard(r, { onFav } = {}) {
-  return h('div', { class: 'rcard' + (r.traditional ? ' trad-card' : '') },
+  const activeTime = (r.prepTime || 0) + (r.cookTime || 0);
+  const meta = [
+    activeTime ? h('span', { class: 'rcard-stat' }, icon('clock', 15), fmtMinutes(activeTime)) : null,
+    r.servings ? h('span', { class: 'rcard-stat' }, icon('users', 15), `${fmtNum(r.servings, 1)} porcji`) : null,
+    r.temperature ? h('span', { class: 'rcard-stat' }, icon('thermo', 15), r.temperature) : null,
+  ].filter(Boolean);
+  const tags = [
+    h('span', { class: 'rcard-tag' }, catName(r.category)),
+    r.traditional ? h('span', { class: 'rcard-tag trad' }, icon('star', 13), 'Tradycyjna') : null,
+  ].filter(Boolean);
+
+  return h('article', { class: 'rcard z-recipe-card' },
     h('a', { class: 'rcard-main', href: '#/recipe/' + encodeURIComponent(r.id), 'aria-label': r.name,
       onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); } },
-      thumbEl(r),
-      h('div', { class: 'rbody' },
-        h('div', { class: 'rtitle' }, tradMark(r), h('span', { class: 'rname' }, r.name || 'Bez nazwy')),
-        h('div', { class: 'rmeta' }, metaLine(r)))),
-    heartBtn(r, onFav));
+      h('div', { class: 'rcard-media' },
+        h('img', {
+          class: 'rcard-image',
+          src: r.photo || r.thumb || recipeArtUrl(r),
+          alt: r.photo ? `Zdjęcie: ${r.name}` : '',
+          loading: 'lazy',
+          decoding: 'async',
+        }),
+        h('div', { class: 'rcard-media-fade', 'aria-hidden': 'true' }),
+        h('div', { class: 'rcard-tags' }, ...tags)),
+      h('div', { class: 'rcard-info' },
+        h('div', { class: 'rcard-title' }, r.name || 'Bez nazwy'),
+        meta.length ? h('div', { class: 'rcard-stats' }, ...meta) : null,
+        r.description ? h('p', { class: 'rcard-description' }, r.description) : null)),
+    h('div', { class: 'rcard-fav' }, heartBtn(r, onFav)));
 }
 
 export function sectionHead(title, { action, onAction, count } = {}) {
