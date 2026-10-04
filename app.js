@@ -165,7 +165,7 @@ async function boot() {
   const storeMode = storageMode();
   if (storeMode !== 'indexeddb') {
     const label = storeMode === 'fallback-cache' ? 'Cache API' : storeMode === 'fallback-localStorage' ? 'localStorage' : 'pamięć sesyjna';
-    toast(`Tryb zgodności pamięci: ${label}. Zrób kopię JSON.`, { type: 'warning', ms: 5000 });
+    toast(`Tryb zgodności pamięci: ${label}. Zrób kopię JSON.`, { ms: 5000 });
   }
   subscribe((type) => {
     if (type === 'settings') applyAppearance();
