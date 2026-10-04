@@ -81,7 +81,9 @@ export function detailView({ id }) {
         r.servings ? ` · ${fmtNum(r.servings * k, 1)} porcji` : '') : h('span', { class: 'muted' }, 'Wpisz wartość docelową'));
     };
     const build = () => {
-      const rCost = !amateur() ? recipeCost(r, 1) : null;
+      const showPct = !!(table && table.ok && r.bakers && !amateur());
+    const pct = new Map(table && table.ok ? table.rows.map((x) => [x.id, x]) : []);
+    const rCost = !amateur() ? recipeCost(r, 1) : null;
     const previewIngredients = allIngredients(r).filter((i) => i.name).slice(0, 6);
     const ingredientOrb = (ing) => {
       const name = String(ing.name || '').trim();
