@@ -108,6 +108,18 @@ Status: ✅
 
 ### 10. Animacje i micro-interactions
 Status: 🔄
+
+### 10A. Migracja funkcji z Kucharka Claude
+Status: ✅
+- pełna biblioteka 1200+ receptur
+- Magazyn + automatyczne zużycie + braki → Zakupy
+- skaner EAN z obsługą latarki
+- Historia gotowania
+- Żarłok PRO: dostawy, zamówienia, produkcja, planowanie, analityka, straty, inwentaryzacje, partie i autopilot
+- opcjonalny Żarłok AI
+- rozszerzone QA tras i funkcji
+- backup przed migracją
+- wersja 2.1.4
 - przejścia ekranów
 - spring motion
 - reakcje przy nacisku
