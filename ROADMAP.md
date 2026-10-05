@@ -62,7 +62,7 @@ Status: ✅
 - brak zależności od internetu dla fallbacków
 
 ### 5. GOTUJĘ / Chef Mode
-Status: ⏳
+Status: ✅
 - krok po kroku
 - swipe
 - timer
@@ -72,7 +72,7 @@ Status: ⏳
 - ekran końcowy
 
 ### 6. Kalkulatory
-Status: ⏳
+Status: ✅
 - pizza / ciasto
 - procenty piekarskie
 - przeliczanie
