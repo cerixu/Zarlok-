@@ -13,6 +13,7 @@ import { checkForUpdate, swVersion, storageInfo, requestPersist, isStandalone, i
 import { storageMode } from './db.js';
 import { searchGoogle, googleConfigured } from './search.js';
 import { textInput } from './ui.js';
+import { getAIGatewayUrl, setAIGatewayUrl, setAIGatewayToken, clearAIGatewayToken, testAIGateway, aiEnabled } from './ai.js';
 import { APP_VERSION, fmtDateTime } from './util.js';
 
 const mb = (b) => (b == null ? '—' : b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1).replace('.', ',') + ' MB');
@@ -88,6 +89,20 @@ export function settingsView() {
 
   const cooking = group('Gotowanie',
     switchEl(!!getSetting('guideSpeak'), set('guideSpeak'), 'Czytaj kroki na głos', 'W trybie „GOTUJĘ” (głos systemowy iOS)'));
+
+  /* ----- Żarłok AI ----- */
+  const aiUrlIn = textInput({ value: getAIGatewayUrl(), label: 'Adres AI Gateway', placeholder: 'https://…', type: 'url', capitalize: 'none', inputmode: 'url' });
+  const aiTokenIn = textInput({ value: '', label: 'Token sesji AI', placeholder: 'Token gatewaya', type: 'password', capitalize: 'none' });
+  const aiStatus = h('p', { class: 'muted small', 'aria-live': 'polite' }, getAIGatewayUrl() ? 'Gateway skonfigurowany. Token jest tylko sesyjny.' : 'AI jest opcjonalne i nic nie wysyła bez Twojego polecenia.');
+  const ai = group('Żarłok AI',
+    switchEl(aiEnabled(), async (v) => { await set('aiEnabled')(v); }, 'Włącz funkcje AI', 'Opcjonalny asystent receptury i import adresu strony.'),
+    field('Adres AI Gateway', aiUrlIn), field('Token sesji', aiTokenIn), aiStatus,
+    h('div', { class: 'row wrap gap' },
+      button('Zapisz adres', { icon: 'check', onClick: async () => { try { await setAIGatewayUrl(aiUrlIn.value); clearAIGatewayToken(); aiTokenIn.value=''; aiStatus.textContent='Adres zapisany. Wpisz token sesji i użyj „Połącz”.'; toast('Adres gatewaya zapisany'); } catch(e) { toast(e.message||'Niepoprawny adres gatewaya',{type:'error'}); } } }),
+      button('Połącz', { icon: 'sparkle', kind: 'primary', onClick: async () => { try { await setAIGatewayUrl(aiUrlIn.value); setAIGatewayToken(aiTokenIn.value); await testAIGateway(); aiStatus.textContent='Połączono z gatewayem AI. Token pozostaje tylko w pamięci sesji.'; toast('Żarłok AI jest gotowy'); } catch(e) { clearAIGatewayToken(); toast(e.message||'Nie udało się połączyć z AI',{type:'error',ms:5000}); } } }),
+      button('Wyloguj token', { icon: 'x', kind: 'ghost', onClick: () => { clearAIGatewayToken(); aiTokenIn.value=''; aiStatus.textContent='Token sesji usunięty z pamięci.'; toast('Token AI wyczyszczony'); } })
+    ),
+    h('p', { class: 'muted small' }, 'Żarłok nie zapisuje klucza OpenAI. Do działania potrzebujesz własnego HTTPS gatewaya.'));
 
   /* ----- Kopia zapasowa ----- */
   const backupInfo = h('p', { class: 'muted small' });
@@ -197,7 +212,7 @@ export function settingsView() {
   const about = group('Prywatność',
     h('p', { class: 'muted' }, 'Kucharzyna nie ma konta, reklam, śledzenia ani analityki. Wszystkie dane są w pamięci tego urządzenia (IndexedDB) i nigdzie nie są wysyłane. Internet jest używany tylko wtedy, gdy sam otworzysz wyszukiwarkę Google lub Google Tłumacz.'));
 
-  c.append(appearance, recipes, cooking, search, backup, app, install, danger, about);
+  c.append(appearance, recipes, cooking, search, ai, backup, app, install, danger, about);
   void state;
   return { el: s.el };
 }
