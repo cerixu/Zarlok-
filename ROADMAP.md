@@ -82,7 +82,7 @@ Status: ✅
 - wspólny glass UI
 
 ### 7. Magazyn i Zakupy
-Status: ⏳
+Status: ✅
 - stan magazynowy
 - automatyczne zużycie
 - niskie stany
@@ -92,7 +92,7 @@ Status: ⏳
 - glass UI
 
 ### 8. Import i wyszukiwanie
-Status: ⏳
+Status: ✅
 - wyszukiwanie
 - import tekstu
 - import ze stron
@@ -100,14 +100,14 @@ Status: ⏳
 - prezentacja wyników w nowym systemie
 
 ### 9. Minutniki
-Status: ⏳
+Status: ✅
 - wiele timerów
 - pływające pastylki
 - spójny wygląd z resztą UI
 - zachowanie po przeładowaniu
 
 ### 10. Animacje i micro-interactions
-Status: ⏳
+Status: 🔄
 - przejścia ekranów
 - spring motion
 - reakcje przy nacisku
@@ -137,3 +137,13 @@ Status: ⏳
 - accessibility
 - końcowy audit
 - finalny numer wersji
+
+## Migracja funkcji z Kucharka Claude
+- Magazyn: stany, progi, EAN, automatyczne zużycie receptury, braki i połączenie z zakupami.
+- PRO: dostawy, zamówienia, produkcja, planowanie, analityka, straty, inwentaryzacje, partie/terminy i autopilot.
+- Historia gotowania: rejestrowanie ukończonych gotowań.
+- AI: opcjonalny gateway sesyjny, pytania do receptury i import URL przez AI.
+- Import: rozszerzony workflow URL/tekst/plik z podglądem i poprawkami.
+- Biblioteka: pełny pakiet archiwalny 1200+ receptur z polską warstwą tłumaczeń.
+- Kalkulator mąki: tryb „mam mąkę” przeniesiony do Żarłoka.
+- Skaner EAN oraz obsługa flasha przeniesione do Magazynu.
