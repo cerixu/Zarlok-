@@ -7,7 +7,7 @@
    ========================================================================== */
 
 const DB_NAME = 'kucharzyna-db';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const FALLBACK_CACHE = 'zarlok-storage-v1';
 const FALLBACK_PREFIX = 'zarlok-store:';
 const OPEN_TIMEOUT = 2500;
@@ -221,6 +221,45 @@ function fallbackKey(name, value) {
   return String(value);
 }
 
+function generatedId(store) {
+  try { return `zarlok_${store}_${crypto.randomUUID()}`; }
+  catch (_) { return `zarlok_${store}_${Date.now()}_${Math.random().toString(36).slice(2)}`; }
+}
+
+/**
+ * Safari potrafi otworzyć bazę, ale odrzucić pojedynczy zapis, np. gdy
+ * istniejący object store ma keyPath, którego rekord nie spełnia.
+ * Normalizujemy tylko klucze typu "id". Pozostałe keyPathy są wymagane,
+ * bo ich automatyczne zgadywanie mogłoby zmienić znaczenie danych.
+ */
+function prepareRecord(store, value) {
+  const keyPath = STORES[store];
+  if (!keyPath) throw new Error(`Nieznany magazyn danych: ${store}`);
+  const next = structuredCloneSafe(value);
+  if (next == null || typeof next !== 'object') {
+    throw new Error(`Nieprawidłowy rekord magazynu „${store}”.`);
+  }
+  if (next[keyPath] == null || next[keyPath] === '') {
+    if (keyPath === 'id') next.id = generatedId(store);
+    else throw new Error(`Brak pola „${keyPath}” wymaganego przez magazyn „${store}”.`);
+  }
+  return next;
+}
+
+async function activateFallback(reason) {
+  const fb = await loadFallbackState();
+  activeBackend = fb.persistence === 'memory' ? 'memory-fallback' : 'fallback-' + fb.persistence;
+  if (reason) console.warn('[Żarłok] IndexedDB zapis odrzucony — przełączam na magazyn zgodności:', reason);
+  return { kind: 'fallback', state: fb, reason };
+}
+
+async function fallbackPut(state, store, value) {
+  const next = prepareRecord(store, value);
+  state.stores.get(store).set(fallbackKey(store, next[STORES[store]]), next);
+  await persistFallbackStore(store);
+  return next;
+}
+
 const fallbackGetAll = (st, name) => [...st.stores.get(name).values()];
 const fallbackGet = (st, name, key) => st.stores.get(name).get(fallbackKey(name, key));
 const fallbackByIndex = (st, name, index, key) =>
@@ -243,29 +282,41 @@ export const db = {
     return wrap(b.db.transaction(store).objectStore(store).index(index).getAll(key));
   },
   async put(store, val) {
-    const b = await openDB();
-    if (b.kind === 'fallback') {
-      const s = b.state.stores.get(store);
-      s.set(fallbackKey(store, val[STORES[store]]), structuredCloneSafe(val));
-      await persistFallbackStore(store);
-      return;
+    let b = await openDB();
+    if (b.kind === 'fallback') return fallbackPut(b.state, store, val);
+    const next = prepareRecord(store, val);
+    try {
+      const t = b.db.transaction(store, 'readwrite');
+      t.objectStore(store).put(next);
+      await done(t);
+      return next;
+    } catch (err) {
+      b = await activateFallback(err);
+      return fallbackPut(b.state, store, val);
     }
-    const t = b.db.transaction(store, 'readwrite');
-    t.objectStore(store).put(val);
-    return done(t);
   },
   async putMany(store, vals) {
-    const b = await openDB();
+    let b = await openDB();
+    const prepared = vals.map((v) => prepareRecord(store, v));
     if (b.kind === 'fallback') {
       const s = b.state.stores.get(store);
-      vals.forEach((v) => s.set(fallbackKey(store, v[STORES[store]]), structuredCloneSafe(v)));
+      prepared.forEach((v) => s.set(fallbackKey(store, v[STORES[store]]), v));
       await persistFallbackStore(store);
-      return;
+      return prepared;
     }
-    const t = b.db.transaction(store, 'readwrite');
-    const s = t.objectStore(store);
-    vals.forEach((v) => s.put(v));
-    return done(t);
+    try {
+      const t = b.db.transaction(store, 'readwrite');
+      const s = t.objectStore(store);
+      prepared.forEach((v) => s.put(v));
+      await done(t);
+      return prepared;
+    } catch (err) {
+      b = await activateFallback(err);
+      const s = b.state.stores.get(store);
+      prepared.forEach((v) => s.set(fallbackKey(store, v[STORES[store]]), v));
+      await persistFallbackStore(store);
+      return prepared;
+    }
   },
   async delete(store, key) {
     const b = await openDB();
@@ -290,7 +341,7 @@ export const db = {
     return done(t);
   },
   async tx(stores, fn) {
-    const b = await openDB();
+    let b = await openDB();
     if (b.kind === 'fallback') {
       const clones = new Map();
       stores.forEach((name) => {
@@ -300,7 +351,10 @@ export const db = {
         clones.set(name, copy);
       });
       fn({
-        put: (s, v) => clones.get(s).set(fallbackKey(s, v[STORES[s]]), structuredCloneSafe(v)),
+        put: (s, v) => {
+          const next = prepareRecord(s, v);
+          clones.get(s).set(fallbackKey(s, next[STORES[s]]), next);
+        },
         delete: (s, k) => clones.get(s).delete(fallbackKey(s, k)),
         clear: (s) => clones.get(s).clear(),
       });
@@ -308,13 +362,35 @@ export const db = {
       for (const name of stores) await persistFallbackStore(name);
       return;
     }
-    const t = b.db.transaction(stores, 'readwrite');
-    fn({
-      put: (s, v) => t.objectStore(s).put(v),
-      delete: (s, k) => t.objectStore(s).delete(k),
-      clear: (s) => t.objectStore(s).clear(),
-    });
-    return done(t);
+    try {
+      const t = b.db.transaction(stores, 'readwrite');
+      fn({
+        put: (s, v) => t.objectStore(s).put(prepareRecord(s, v)),
+        delete: (s, k) => t.objectStore(s).delete(k),
+        clear: (s) => t.objectStore(s).clear(),
+      });
+      return await done(t);
+    } catch (err) {
+      b = await activateFallback(err);
+      const clones = new Map();
+      stores.forEach((name) => {
+        const src = b.state.stores.get(name);
+        const copy = new Map();
+        src.forEach((v, k) => copy.set(k, structuredCloneSafe(v)));
+        clones.set(name, copy);
+      });
+      fn({
+        put: (s, v) => {
+          const next = prepareRecord(s, v);
+          clones.get(s).set(fallbackKey(s, next[STORES[s]]), next);
+        },
+        delete: (s, k) => clones.get(s).delete(fallbackKey(s, k)),
+        clear: (s) => clones.get(s).clear(),
+      });
+      for (const name of stores) b.state.stores.set(name, clones.get(name));
+      for (const name of stores) await persistFallbackStore(name);
+      return;
+    }
   },
 };
 
