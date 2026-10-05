@@ -4295,3 +4295,58 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
   .recipe-fullscreen,
   .recipe-fullscreen.is-leaving { animation: none !important; }
 }
+
+
+/* Żarłok 2.2.2 · zwijany pasek Receptur po przewinięciu */
+.recipes .topbar.scrolled {
+  background: rgba(28,28,30,.82);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+.recipes .topbar.scrolled .subbar {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+.recipes .subbar {
+  max-height: 520px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height .22s ease, opacity .16s ease, padding .22s ease;
+}
+
+/* Pełna receptura zajmuje cały dostępny ekran. */
+.detail .content {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+.detail .scroll {
+  padding-left: 0;
+  padding-right: 0;
+}
+.recipe-fullscreen {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: 100%;
+}
+.recipe-full-hero {
+  height: min(58svh, 500px);
+  min-height: 390px;
+}
+.recipe-fullscreen .ref-details {
+  width: 100%;
+  max-width: none;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+@media (max-width: 390px) {
+  .recipe-full-hero {
+    height: min(56svh, 455px);
+    min-height: 345px;
+  }
+}
