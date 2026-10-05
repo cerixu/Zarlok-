@@ -85,29 +85,15 @@ jobs:
             errors.push('ART_WINDOW_THROW: ' + e.message + '\\n' + (e.stack || ''));
           }
           try {
-            const detailSource = await page.evaluate(async () => fetch('./views-detail.js?detaildiag=2').then(r => r.text()));
+            const detailSource = await page.evaluate(async () => fetch('./views-detail.js?detaildiag=3').then(r => r.text()));
+            const detailBody = detailSource.split('\\n').slice(21).join('\\n').replaceAll('export ', '');
             await page.evaluate(() => {
               window.__detailDiagErrors = [];
               window.addEventListener('error', e => window.__detailDiagErrors.push({
                 message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
               }), true);
             });
-            const dl = detailSource.split('\\n');
-            const kept = [];
-            let inImport = false;
-            for (const line of dl) {
-              const t = line.trim();
-              if (!inImport && t.startsWith('import ')) {
-                inImport = !t.includes(';');
-                continue;
-              }
-              if (inImport) {
-                if (t.includes(';')) inImport = false;
-                continue;
-              }
-              kept.push(line.replace(/^export\\s+/, ''));
-            }
-            await page.addScriptTag({ content: kept.join('\\n') + '\\n//# sourceURL=views-detail-debug.js' });
+            await page.addScriptTag({ content: detailBody + '\\n//# sourceURL=views-detail-debug.js' });
             const detailDiag = await page.evaluate(() => window.__detailDiagErrors || []);
             if (detailDiag.length) errors.push('DETAIL_WINDOW_FAIL: ' + JSON.stringify(detailDiag));
             else console.log('DETAIL_WINDOW_PARSE_OK');
