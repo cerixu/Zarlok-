@@ -81,8 +81,15 @@ export function recipesView(query) {
   function paintChips() {
     const all = listRecipes();
     const used = new Set(all.map((r) => r.category));
-    const mk = (id, label, n, cls = '') => h('button', { type: 'button', class: 'chip ' + cls + (vs.chip === id ? ' on' : ''), 'aria-pressed': vs.chip === id,
-      onClick: () => { vs.chip = id; vs.limit = 30; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
+    const mk = (id, label, n, cls = '', active = vs.chip === id) => h('button', { type: 'button', class: 'chip ' + cls + (active ? ' on' : ''), 'aria-pressed': active,
+      onClick: () => { vs.chip = id; if (id !== 'all' && ['fav','recent','trad'].includes(id)) vs.origin = ''; vs.limit = 30; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
+    const originBtn = (o) => {
+      const n = all.filter((r) => r.origin === o.code).length;
+      return h('button', { type: 'button', class: 'chip cuisine-chip' + (vs.origin === o.code ? ' on' : ''), 'aria-pressed': vs.origin === o.code, disabled: n === 0,
+        onClick: () => { vs.origin = o.code; vs.chip = 'all'; vs.limit = 30; paint(); } },
+        h('span', { class: 'cuisine-flag', 'aria-hidden': 'true' }, o.flag),
+        h('span', null, o.name), h('span', { class: 'chip-n' }, String(n)));
+    };
 
     const quick = [
       mk('all', 'Wszystkie', all.length),
@@ -94,11 +101,14 @@ export function recipesView(query) {
       .filter((c) => used.has(c.id) || vs.chip === c.id)
       .map((c) => mk(c.id, [c.icon || '', c.name].filter(Boolean).join(' '), all.filter((r) => r.category === c.id).length, 'category-chip'));
 
+    const cuisineCount = ORIGINS.filter((o) => all.some((r) => r.origin === o.code)).length;
     quick.push(h('button', { type: 'button', class: 'chip ghost category-manage', 'aria-label': 'Zarządzaj kategoriami', onClick: () => openCategoryManager() }, icon('sliders', 16), 'Kategorie'));
 
     chips.replaceChildren(
       h('div', { class: 'catalog-filter-label' }, 'Szybki dostęp'),
       h('div', { class: 'chips-row quick' }, ...quick),
+      h('div', { class: 'catalog-filter-label cuisine-label' }, 'Kuchnie świata', h('span', { class: 'catalog-filter-count' }, cuisineCount ? cuisineCount + ' krajów' : '')),
+      h('div', { class: 'chips-row cuisines' }, ...ORIGINS.map(originBtn)),
       h('div', { class: 'catalog-filter-label category-label' }, 'Kategorie'),
       h('div', { class: 'chips-row categories' }, ...cats)
     );
