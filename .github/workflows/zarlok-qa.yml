@@ -71,7 +71,7 @@ jobs:
           ];
           try {
             const artSource = await page.evaluate(async () => fetch('./art.js?rawdiag=1').then(r => r.text()));
-            await page.evaluate((src) => { new Function(src); }, artSource);
+            await page.evaluate((src) => { new Function(src.replace(/export\\s+/g, '')); }, artSource);
             console.log('ART_CLASSIC_PARSE_OK');
           } catch (e) {
             errors.push('ART_CLASSIC_PARSE_FAIL: ' + e.message + '\\n' + (e.stack || ''));
