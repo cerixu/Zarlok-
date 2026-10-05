@@ -21,7 +21,7 @@ export const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navi
 function promptUpdate(worker) {
   if (updateShown) return;
   updateShown = true;
-  toast('Nowa wersja Kucharzyny jest dostępna', {
+  toast('Nowa wersja Żarłoka jest dostępna', {
     sticky: true,
     action: {
       label: 'Odśwież',
