@@ -27,7 +27,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP=$(grep -oE "APP_VERSION = '[^']+'" util.js | sed "s/.*'//;s/'//")
-          SW=$(grep -oE "VERSION = 'kucharzyna-[^']+'" sw.js | sed "s/.*kucharzyna-//;s/'//")
+          APP=$(node -p "require('fs').readFileSync('util.js','utf8').match(/APP_VERSION = '([^']+)'/)[1]")
+          SW=$(node -p "require('fs').readFileSync('sw.js','utf8').match(/VERSION = 'kucharzyna-([^']+)'/)[1]")
+          echo "Application version: $APP"
+          echo "Service Worker version: $SW"
           test "$APP" = "$SW"
           echo "Version OK: $APP"
