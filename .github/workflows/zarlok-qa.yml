@@ -23,6 +23,26 @@ jobs:
             echo "Checking $f"
             node --check "$f"
           done
+      - name: Cross-parser syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save acorn@8
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import * as acorn from 'acorn';
+          for (const f of ['views-detail.js','art.js']) {
+            const src = fs.readFileSync(f, 'utf8');
+            try {
+              acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module', locations: true });
+              console.log('ACORN_OK ' + f);
+            } catch (e) {
+              console.error('ACORN_FAIL ' + f + ': ' + e.message + ' line=' + e.loc?.line + ' col=' + e.loc?.column);
+              process.exitCode = 1;
+            }
+          }
+          NODE
+
       - name: Check application version
         shell: bash
         run: |
