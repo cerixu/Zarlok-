@@ -10,10 +10,10 @@ import { pendingCount } from './shopping.js';
 import { backupDue, daysSinceBackup } from './backup.js';
 
 const plural = (n) => `${n} ${n === 1 ? 'receptura' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'receptury' : 'receptur'}`;
-const HEADLINE = '„No Elo kurwa, Kucharzyno za pięć złotych👨‍🍳”';
+const HEADLINE = 'Gotuj lepiej. Gotuj po swojemu.';
 
 export function startView() {
-  const s = screen({ title: 'Kucharzyna', cls: 'start' });
+  const s = screen({ title: 'Żarłok', cls: 'start' });
   const c = s.content;
   let unsub;
 
