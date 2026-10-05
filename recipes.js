@@ -62,6 +62,8 @@ export const DEFAULT_SETTINGS = {
   archiveSeeded: false,
   inventoryAutoConsumption: true,
   inventoryAutoShopping: true,
+  aiEnabled: true,
+  aiGatewayUrl: '',
 };
 
 /* ---------- Stan (lustro bazy) ---------- */
