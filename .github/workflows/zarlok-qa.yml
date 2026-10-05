@@ -53,6 +53,15 @@ jobs:
           python3 -m http.server 4173 >/tmp/zarlok-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          src = Path('views-detail.js').read_text()
+          src = re.sub(r'(?ms)^import\\s+.*?;\\s*', '', src)
+          src = re.sub(r'(?m)^export\\s+', '', src)
+          Path('debug-detail.js').write_text(src)
+          Path('debug-detail.html').write_text('<!doctype html><script src="./debug-detail.js"></script>')
+          PY
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({headless:true});
