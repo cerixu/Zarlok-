@@ -107,7 +107,13 @@ Status: ✅
 - zachowanie po przeładowaniu
 
 ### 10. Animacje i micro-interactions
-Status: 🔄
+Status: ✅
+- springowe reakcje przycisków i kart
+- przejścia między widokami
+- animacje toastów i stanów ładowania
+- focus-visible dla klawiatury i accessibility
+- pełne wsparcie `prefers-reduced-motion`
+- wersja 2.1.6
 
 ### 10A. Migracja funkcji z Kucharka Claude
 Status: ✅
