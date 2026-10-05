@@ -63,36 +63,29 @@ export function recipeTile(r) {
 /** Karta receptury (lista, ekran startowy). */
 export function recipeCard(r, { onFav } = {}) {
   const activeTime = (r.prepTime || 0) + (r.cookTime || 0);
-  const meta = [
-    activeTime ? h('span', { class: 'rcard-stat' }, icon('clock', 15), fmtMinutes(activeTime)) : null,
-    r.servings ? h('span', { class: 'rcard-stat' }, icon('users', 15), `${fmtNum(r.servings, 1)} porcji`) : null,
-    r.temperature ? h('span', { class: 'rcard-stat' }, icon('thermo', 15), r.temperature) : null,
-  ].filter(Boolean);
-  const tags = [
-    h('span', { class: 'rcard-tag' }, catName(r.category)),
-    r.traditional ? h('span', { class: 'rcard-tag trad' }, icon('star', 13), 'Tradycyjna') : null,
-  ].filter(Boolean);
-
-  return h('article', { class: 'rcard z-recipe-card' },
+  const ingredients = (r.sections || []).flatMap((s) => s.ingredients || []).filter((i) => i.name).slice(0, 4);
+  return h('article', { class: 'rcard ref-recipe-card' },
     h('a', { class: 'rcard-main', href: '#/recipe/' + encodeURIComponent(r.id), 'aria-label': r.name,
       onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); } },
-      h('div', { class: 'rcard-media' },
-        h('img', {
-          class: 'rcard-image',
-          src: r.photo || r.thumb || recipeArtUrl(r),
-          alt: r.photo ? `Zdjęcie: ${r.name}` : '',
-          loading: 'lazy',
-          decoding: 'async',
-        }),
-        h('div', { class: 'rcard-media-fade', 'aria-hidden': 'true' }),
-        h('div', { class: 'rcard-tags' }, ...tags)),
-      h('div', { class: 'rcard-info' },
-        h('div', { class: 'rcard-title' }, r.name || 'Bez nazwy'),
-        meta.length ? h('div', { class: 'rcard-stats' }, ...meta) : null,
-        r.description ? h('p', { class: 'rcard-description' }, r.description) : null)),
-    h('div', { class: 'rcard-fav' }, heartBtn(r, onFav)));
+      h('div', { class: 'ref-card-photo' },
+        h('img', { src: r.photo || r.thumb || recipeArtUrl(r), alt: '', loading: 'lazy', decoding: 'async' }),
+        h('div', { class: 'ref-card-photo-glow', 'aria-hidden': 'true' })),
+      h('div', { class: 'ref-card-body' },
+        h('div', { class: 'ref-card-topline' },
+          h('span', { class: 'ref-card-category' }, catName(r.category)),
+          r.traditional ? h('span', { class: 'ref-card-trad' }, icon('star', 13)) : null),
+        h('div', { class: 'ref-card-title' }, r.name || 'Bez nazwy'),
+        h('div', { class: 'ref-card-metrics' },
+          r.rating ? h('span', { class: 'ref-rating' }, icon('star', 14), fmtNum(r.rating, 1)) : null,
+          activeTime ? h('span', null, icon('clock', 14), fmtMinutes(activeTime)) : null,
+          r.calories ? h('span', null, fmtNum(r.calories, 0) + ' kcal') : null),
+        ingredients.length ? h('div', { class: 'ref-card-ingredients' },
+          ingredients.map((i) => h('span', { class: 'ref-mini-ingredient', title: i.name }, i.name))) : null,
+        h('div', { class: 'ref-card-footer' },
+          h('span', null, 'Pokaż więcej szczegółów', icon('down', 14)),
+          heartBtn(r, onFav))),
+      h('span', { class: 'ref-card-tap', 'aria-hidden': 'true' })));
 }
-
 export function sectionHead(title, { action, onAction, count } = {}) {
   return h('div', { class: 'sechead' },
     h('h2', null, title, count != null ? h('span', { class: 'count' }, String(count)) : null),
