@@ -10,8 +10,9 @@ import {
 import { navigate, goBack } from './router.js';
 import {
   state, getRecipe, blankRecipe, blankSection, blankIngredient, blankStep, normalizeRecipe, cloneRecipe, saveRecipe, ORIGINS,
-  ingredientNames, catalogLookup, kv,
+  ingredientNames, catalogLookup,
 } from './recipes.js';
+import { kv } from './db.js';
 import { bakersTable } from './calculator.js';
 import { parseIngredientLine, cleanStep } from './importer.js';
 import { UNITS, debounce, fmtDateTime } from './util.js';
