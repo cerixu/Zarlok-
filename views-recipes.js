@@ -81,8 +81,8 @@ export function recipesView(query) {
   function paintChips() {
     const all = listRecipes();
     const used = new Set(all.map((r) => r.category));
-    const mk = (id, label, n, cls = '', active = vs.chip === id) => h('button', { type: 'button', class: 'chip ' + cls + (active ? ' on' : ''), 'aria-pressed': active,
-      onClick: () => { vs.chip = id; if (id !== 'all' && ['fav','recent','trad'].includes(id)) vs.origin = ''; vs.limit = 30; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
+    const mk = (id, label, n, cls = '', active = vs.chip === id && !vs.origin) => h('button', { type: 'button', class: 'chip ' + cls + (active ? ' on' : ''), 'aria-pressed': active,
+      onClick: () => { vs.chip = id; vs.origin = ''; vs.limit = 30; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
     const originBtn = (o) => {
       const n = all.filter((r) => r.origin === o.code).length;
       return h('button', { type: 'button', class: 'chip cuisine-chip' + (vs.origin === o.code ? ' on' : ''), 'aria-pressed': vs.origin === o.code, disabled: n === 0,
@@ -133,7 +133,8 @@ export function recipesView(query) {
         button('Szukaj w internecie', { icon: 'globe', onClick: () => navigate('/search?q=' + encodeURIComponent(vs.q || '')) })));
     } else {
       const labelMap = new Map(state.categories.map((c) => [c.id, c.name]));
-      const activeLabel = vs.chip === 'all' ? 'Wszystkie receptury'
+      const originLabel = vs.origin ? (ORIGINS.find((o) => o.code === vs.origin)?.name || '') : '';
+      const activeLabel = originLabel ? originLabel : vs.chip === 'all' ? 'Wszystkie receptury'
         : vs.chip === 'fav' ? 'Ulubione'
         : vs.chip === 'recent' ? 'Ostatnio otwierane'
         : vs.chip === 'trad' ? 'Tradycyjne'
