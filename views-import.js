@@ -6,7 +6,8 @@
    ========================================================================== */
 import { h, icon, screen, button, iconBtn, toast, field, textInput, textArea, emptyState } from './ui.js';
 import { navigate, goBack } from './router.js';
-import { saveRecipe, kv, catName } from './recipes.js';
+import { saveRecipe, catName } from './recipes.js';
+import { kv } from './db.js';
 import { parseRecipeText, looksLikeUrl, hostOf } from './importer.js';
 import { qtyParts } from './components.js';
 import { fmtMinutes } from './util.js';
