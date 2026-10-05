@@ -199,3 +199,25 @@ jobs:
           }
           await browser.close();
           NODE
+  iphone_safari:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright WebKit
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps webkit
+      - name: Check iPhone Safari QA script syntax
+        run: node --check qa-iphone-safari.mjs
+      - name: Run iPhone Safari QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 >/tmp/zarlok-iphone-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          ZARLOK_BASE_URL=http://127.0.0.1:4173/ node qa-iphone-safari.mjs
