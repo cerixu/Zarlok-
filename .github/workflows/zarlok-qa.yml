@@ -66,7 +66,8 @@ jobs:
             'db.js','recipes.js','ui.js','router.js','pwa.js','timers.js',
             'views-start.js','views-recipes.js','views-detail.js','views-editor.js',
             'views-cook.js','views-calc.js','shopping.js','views-import.js',
-            'views-settings.js','views-guide.js','views-search.js'
+            'views-settings.js','views-guide.js','views-search.js',
+            'components.js','calculator.js','calc-kit.js','backup.js','importer.js','art.js','kitchen.js','search.js','views-tools.js'
           ];
           for (const mod of modules) {
             try {
