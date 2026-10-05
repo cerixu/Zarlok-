@@ -33,3 +33,42 @@ jobs:
           echo "Service Worker version: $SW"
           test "$APP" = "$SW"
           echo "Version OK: $APP"
+
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+      - name: Browser startup smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 >/tmp/zarlok-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage();
+          const errors = [];
+          page.on('console', msg => { if (msg.type() === 'error') errors.push('console: ' + msg.text()); });
+          page.on('pageerror', err => errors.push('pageerror: ' + err.message));
+          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(2500);
+          const state = await page.evaluate(() => ({
+            boot: !!document.querySelector('#boot'),
+            bootGone: document.querySelector('#boot')?.classList.contains('gone') ?? false,
+            viewText: document.querySelector('#view')?.innerText || '',
+            version: window.__kucharzyna?.ready ? 'ready' : 'not-ready'
+          }));
+          console.log(JSON.stringify({ state, errors }, null, 2));
+          if (errors.length || !state.bootGone || state.version !== 'ready') {
+            throw new Error('Browser startup failed: ' + JSON.stringify({state, errors}));
+          }
+          await browser.close();
+          NODE
