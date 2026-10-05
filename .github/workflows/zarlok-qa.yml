@@ -82,11 +82,13 @@ jobs:
           page.on('pageerror', err => errors.push('pageerror: ' + err.message + '\\n' + (err.stack || '')));
           page.on('requestfailed', req => errors.push('requestfailed: ' + req.url() + ' :: ' + (req.failure()?.errorText || 'unknown')));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(2500);
+          await page.waitForTimeout(6500);
           const state = await page.evaluate(() => ({
             boot: !!document.querySelector('#boot'),
             bootGone: document.querySelector('#boot')?.classList.contains('gone') ?? false,
             viewText: document.querySelector('#view')?.innerText || '',
+            recipeCards: document.querySelectorAll('.recipe-card,.rcard').length,
+            indexedDB: !!window.indexedDB,
             version: window.__kucharzyna?.ready ? 'ready' : 'not-ready'
           }));
           console.log(JSON.stringify({ state, errors }, null, 2));
@@ -94,5 +96,30 @@ jobs:
           if (errors.length || !started || state.version !== 'ready') {
             throw new Error('Browser startup failed: ' + JSON.stringify({ state, errors }));
           }
+
+          const routeChecks = [
+            ['#/inventory', 'Magazyn'],
+            ['#/history', 'Historia gotowania'],
+            ['#/pro', 'Żarłok PRO'],
+            ['#/calc', 'Kalkulatory'],
+            ['#/import', 'Importuj recepturę'],
+          ];
+          for (const [hash, expected] of routeChecks) {
+            await page.goto('http://127.0.0.1:4173/' + hash, { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(350);
+            const body = await page.locator('#view').innerText().catch(() => '');
+            console.log('ROUTE_CHECK', hash, body.slice(0, 180).replace(/\\n/g, ' | '));
+            if (!body.includes(expected)) throw new Error('Route check failed for ' + hash + ': missing "' + expected + '"');
+          }
+
+          await page.goto('http://127.0.0.1:4173/#/', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(250);
+          const libraryState = await page.evaluate(() => ({
+            count: window.__kucharek?.state?.recipes?.size || window.__kucharzyna?.state?.recipes?.size || 0,
+            title: document.querySelector('#view')?.innerText || ''
+          }));
+          console.log('LIBRARY_CHECK', JSON.stringify(libraryState));
+          if (libraryState.count < 1600) throw new Error('Recipe library is incomplete: ' + libraryState.count);
+          if (!libraryState.title.includes('Żarłok')) throw new Error('Home view did not render after library load');
           await browser.close();
           NODE
