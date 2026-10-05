@@ -3,7 +3,7 @@
    Liczby, jednostki, daty, formatowanie po polsku.
    ========================================================================== */
 
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.6.0';
 
 /** Stabilne ID z prefiksem (rcp_, sec_, ing_, stp_, cat_, shp_, his_). */
 export function uid(prefix = '') {
