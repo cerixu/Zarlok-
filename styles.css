@@ -3757,7 +3757,7 @@ button:active,.btn:active,.iconbtn:active,.tabbar button:active{transform:scale(
 button:focus-visible,.btn:focus-visible,.iconbtn:focus-visible,.tabbar button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 input,textarea,select{transition:border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,background-color var(--motion-fast) ease}
 input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
-.view-enter{animation:zarlokViewIn var(--motion-med) var(--motion-spring) both}
+.view-enter,.enter{animation:zarlokViewIn var(--motion-med) var(--motion-spring) both}
 @keyframes zarlokViewIn{from{opacity:0;transform:translateY(7px) scale(.995)}to{opacity:1;transform:none}}
 .toast{animation:zarlokToastIn 220ms var(--motion-spring) both}
 @keyframes zarlokToastIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
@@ -3765,5 +3765,5 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
 @keyframes zarlokPulse{0%,100%{opacity:.48}50%{opacity:.82}}
 @media (prefers-reduced-motion:reduce){
   button,.btn,.iconbtn,.tabbar button,.recipe-card,.rcard,.card,.tile,.chip,.pill,.panel,.sheet,input,textarea,select{transition:none!important}
-  .view-enter,.toast,.skeleton,.loading{animation:none!important}
+  .view-enter,.enter,.toast,.skeleton,.loading{animation:none!important}
 }
