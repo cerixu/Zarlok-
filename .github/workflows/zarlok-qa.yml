@@ -31,18 +31,19 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import * as acorn from 'acorn';
-          for (const f of ['views-detail.js','art.js']) {
+          let failed = false;
+          for (const f of fs.readdirSync('.').filter(x => x.endsWith('.js'))) {
             const src = fs.readFileSync(f, 'utf8');
             try {
-              acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module', locations: true });
+              acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
               console.log('ACORN_OK ' + f);
             } catch (e) {
               console.error('ACORN_FAIL ' + f + ': ' + e.message + ' line=' + e.loc?.line + ' col=' + e.loc?.column);
-              process.exitCode = 1;
+              failed = true;
             }
           }
+          if (failed) process.exit(1);
           NODE
-
       - name: Check application version
         shell: bash
         run: |
@@ -53,7 +54,6 @@ jobs:
           echo "Service Worker version: $SW"
           test "$APP" = "$SW"
           echo "Version OK: $APP"
-
 
   browser:
     runs-on: ubuntu-latest
@@ -73,87 +73,15 @@ jobs:
           python3 -m http.server 4173 >/tmp/zarlok-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          src = Path('views-detail.js').read_text()
-          src = '\\n'.join(src.splitlines()[21:])
-          src = src.replace('export ', '')
-          Path('debug-detail.js').write_text(src)
-          Path('debug-detail.html').write_text('<!doctype html><script src="./debug-detail.js"></script>')
-          PY
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
-          const browser = await chromium.launch({headless:true});
+          const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage();
           const errors = [];
           page.on('console', msg => { if (msg.type() === 'error') errors.push('console: ' + msg.text()); });
-          page.on('pageerror', err => errors.push('pageerror: ' + err.message + '\n' + (err.stack || '')));
+          page.on('pageerror', err => errors.push('pageerror: ' + err.message + '\\n' + (err.stack || '')));
           page.on('requestfailed', req => errors.push('requestfailed: ' + req.url() + ' :: ' + (req.failure()?.errorText || 'unknown')));
-          const debugPage = await browser.newPage();
-          await debugPage.evaluate(() => {
-            window.__detailDebugErrors = [];
-            window.addEventListener('error', e => window.__detailDebugErrors.push({
-              message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
-            }), true);
-          });
-          await debugPage.goto('http://127.0.0.1:4173/debug-detail.html', { waitUntil: 'load', timeout: 30000 });
-          const detailDebugErrors = await debugPage.evaluate(() => window.__detailDebugErrors || []);
-          if (detailDebugErrors.length) errors.push('DETAIL_DEBUG_WINDOW: ' + JSON.stringify(detailDebugErrors));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 30000 });
-          const modules = [
-            'db.js','recipes.js','ui.js','router.js','pwa.js','timers.js',
-            'views-start.js','views-recipes.js','views-detail.js','views-editor.js',
-            'views-cook.js','views-calc.js','shopping.js','views-import.js',
-            'views-settings.js','views-guide.js','views-search.js',
-            'components.js','calculator.js','calc-kit.js','backup.js','importer.js','art.js','kitchen.js','search.js','views-tools.js'
-          ];
-          try {
-            const artSource2 = await page.evaluate(async () => fetch('./art.js?tagdiag=2').then(r => r.text()));
-            await page.evaluate(() => {
-              window.__artDiagErrors = [];
-              window.addEventListener('error', e => window.__artDiagErrors.push({
-                message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
-              }), true);
-            });
-            await page.addScriptTag({ content: artSource2.replaceAll('export ', '') + '\\n//# sourceURL=art-debug.js' });
-            const diag = await page.evaluate(() => window.__artDiagErrors || []);
-            if (diag.length) errors.push('ART_WINDOW_FAIL: ' + JSON.stringify(diag));
-            else console.log('ART_WINDOW_PARSE_OK');
-          } catch (e) {
-            errors.push('ART_WINDOW_THROW: ' + e.message + '\\n' + (e.stack || ''));
-          }
-          try {
-            const detailSource = await page.evaluate(async () => fetch('./views-detail.js?detaildiag=3').then(r => r.text()));
-            const detailBody = detailSource.split('\\n').slice(21).join('\\n').replaceAll('export ', '');
-            await page.evaluate(() => {
-              window.__detailDiagErrors = [];
-              window.addEventListener('error', e => window.__detailDiagErrors.push({
-                message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
-              }), true);
-            });
-            await page.addScriptTag({ content: detailBody + '\\n//# sourceURL=views-detail-debug.js' });
-            const detailDiag = await page.evaluate(() => window.__detailDiagErrors || []);
-            if (detailDiag.length) errors.push('DETAIL_WINDOW_FAIL: ' + JSON.stringify(detailDiag));
-            else console.log('DETAIL_WINDOW_PARSE_OK');
-          } catch (e) {
-            errors.push('DETAIL_WINDOW_THROW: ' + e.message + '\\n' + (e.stack || ''));
-          }
-          try {
-            const artSource = await page.evaluate(async () => fetch('./art.js?rawdiag=1').then(r => r.text()));
-            await page.evaluate((src) => { new Function(src.replace(/export\s+/g, '')); }, artSource);
-            console.log('ART_CLASSIC_PARSE_OK');
-          } catch (e) {
-            errors.push('ART_CLASSIC_PARSE_FAIL: ' + e.message + '\\n' + (e.stack || ''));
-          }
-          for (const mod of modules) {
-            try {
-              await page.evaluate(async (m) => { await import('./' + m + '?diag=1'); }, mod);
-              console.log('MODULE_OK ' + mod);
-            } catch (e) {
-              errors.push('MODULE_FAIL ' + mod + ': ' + e.message + '\\n' + (e.stack || ''));
-            }
-          }
           await page.waitForTimeout(2500);
           const state = await page.evaluate(() => ({
             boot: !!document.querySelector('#boot'),
@@ -163,7 +91,7 @@ jobs:
           }));
           console.log(JSON.stringify({ state, errors }, null, 2));
           if (errors.length || !state.bootGone || state.version !== 'ready') {
-            throw new Error('Browser startup failed: ' + JSON.stringify({state, errors}));
+            throw new Error('Browser startup failed: ' + JSON.stringify({ state, errors }));
           }
           await browser.close();
           NODE
