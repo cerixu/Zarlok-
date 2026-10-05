@@ -5,7 +5,7 @@ import { h, icon, toast } from './ui.js';
 import { navigate } from './router.js';
 import { catName, catIcon, ORIGINS, toggleFavorite } from './recipes.js';
 import { fmtMinutes, fmtAmount, fmtNum } from './util.js';
-import { recipeArtUrl } from './art.js';
+import { recipeArtUrl, ingredientArtUrl } from './art.js';
 
 export const originOf = (code) => ORIGINS.find((o) => o.code === code);
 
@@ -67,7 +67,7 @@ export function recipeCard(r, { onFav } = {}) {
     .filter((i) => i.name).slice(0, 4);
 
   const ingredientOrb = (ing) => {
-    const src = ing.photo || ing.image || ing.icon || '';
+    const src = ing.photo || ing.image || ingredientArtUrl(ing.name);
     return h('span', {
       class: 'ref-ingredient-orb',
       title: ing.name,
