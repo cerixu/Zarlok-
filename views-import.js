@@ -6,21 +6,42 @@
    ========================================================================== */
 import { h, icon, screen, button, iconBtn, toast, field, textInput, textArea, emptyState } from './ui.js';
 import { navigate, goBack } from './router.js';
-import { saveRecipe, catName } from './recipes.js';
-import { kv } from './db.js';
+import { saveRecipe, kv, catName } from './recipes.js';
 import { parseRecipeText, looksLikeUrl, hostOf } from './importer.js';
-import { qtyParts } from './components.js';
-import { fmtMinutes } from './util.js';
-import { translateRecipe, detectLang } from './search.js';
 import { importRecipeFromUrl, hasAIAccess } from './ai.js';
+import { normalizeRecipe } from './recipes.js';
+import { qtyParts } from './components.js';
+import { copyText, fmtMinutes } from './util.js';
+
+const googleUrl = (q) => 'https://www.google.com/search?q=' + encodeURIComponent(q);
+
+function openExternal(url) {
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!w) location.href = url;   // zablokowane okno — przejdź w tej samej karcie
+}
 
 export function importView(query) {
   let parsed = null;
+  const qParam = (query && query.get && query.get('q')) || '';
 
-  const urlIn = textInput({ value: '', label: 'Adres strony z przepisem', placeholder: 'https://… (opcjonalnie, zapisze się jako źródło)', type: 'url', capitalize: 'none', inputmode: 'url' });
+  const searchIn = textInput({ value: qParam, label: 'Czego szukasz', placeholder: 'np. ciasto na pizzę neapolitańską', capitalize: 'none' });
+  const urlIn = textInput({ value: '', label: 'Adres strony z przepisem', placeholder: 'https://…', type: 'url', capitalize: 'none', inputmode: 'url' });
+  const manualUrlIn = textInput({ value: '', label: 'Adres strony (źródło)', placeholder: 'https://…', type: 'url', capitalize: 'none', inputmode: 'url' });
+  const syncSourceUrl = (from, to) => { to.value = from.value; };
+  urlIn.addEventListener('input', () => syncSourceUrl(urlIn, manualUrlIn));
+  manualUrlIn.addEventListener('input', () => syncSourceUrl(manualUrlIn, urlIn));
   const textIn = textArea({ value: '', label: 'Wklejony przepis', rows: 8, placeholder: 'Wklej tutaj cały przepis: nazwa, składniki, przygotowanie…\n\nMożesz też wkleić kod HTML strony — rozpoznam dane przepisu.' });
   const preview = h('div', { class: 'stack' });
+  const aiStatus = h('p', { class: 'muted small', 'aria-live': 'polite' });
   const s = screen({ title: 'Importuj recepturę', left: iconBtn('left', 'Wstecz', () => goBack('/recipes')), cls: 'import' });
+
+  const doSearch = () => {
+    const q = searchIn.value.trim();
+    if (!q) { searchIn.focus(); return; }
+    if (!navigator.onLine) { toast('Jesteś offline — wyszukiwanie wymaga internetu', { type: 'error' }); return; }
+    openExternal(googleUrl(/przepis|recipe|receptur/i.test(q) ? q : q + ' przepis'));
+  };
+  searchIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
 
   async function pasteFromClipboard() {
     try {
@@ -28,6 +49,7 @@ export function importView(query) {
       if (!t.trim()) { toast('Schowek jest pusty'); return; }
       if (looksLikeUrl(t)) {
         urlIn.value = t.trim();
+        manualUrlIn.value = urlIn.value;
         toast('To adres strony — zapisałem go jako źródło. Skopiuj teraz tekst przepisu ze strony i wklej tutaj.', { ms: 5000 });
         return;
       }
@@ -50,40 +72,63 @@ export function importView(query) {
   const fileIn = h('input', { type: 'file', accept: '.txt,.html,.htm,.md,.json,text/*', class: 'sr-file', 'aria-label': 'Wczytaj plik z przepisem' });
   fileIn.addEventListener('change', () => { loadFile(fileIn.files && fileIn.files[0]); fileIn.value = ''; });
 
-  async function recognizeFromUrl() {
-    const url=urlIn.value.trim();
-    if(!url){toast('Wklej adres strony z przepisem',{type:'error'});urlIn.focus();return;}
-    if(!/^https:\/\//i.test(url)){toast('Importer AI przyjmuje tylko HTTPS',{type:'error'});return;}
-    if(!navigator.onLine){toast('Import z URL wymaga internetu',{type:'error'});return;}
-    if(!hasAIAccess()){toast('Najpierw skonfiguruj Żarłok AI w Ustawieniach',{type:'error',ms:5000});return;}
-    try{parsed={recipe:await importRecipeFromUrl(url),issues:[],stats:{ingredients:0,steps:0}};parsed.stats.ingredients=parsed.recipe.sections.reduce((n,s)=>n+s.ingredients.length,0);parsed.stats.steps=parsed.recipe.steps.length;paintPreview();toast('AI zaimportowało recepturę');}
-    catch(e){toast(e.message||'Nie udało się zaimportować strony',{type:'error',ms:5000});}
+  async function importUrlWithAI() {
+    const url = urlIn.value.trim();
+    if (!url) { urlIn.focus(); toast('Wklej adres strony z przepisem', { type: 'error' }); return; }
+    if (!/^https:\/\//i.test(url)) { toast('Importer AI przyjmuje adres HTTPS', { type: 'error' }); return; }
+    if (!navigator.onLine) { toast('Import z URL wymaga internetu', { type: 'error' }); return; }
+    if (!hasAIAccess()) { toast('Najpierw skonfiguruj Kucharek AI w Ustawieniach', { type: 'error', ms: 5000 }); return; }
+    const btn = c?.querySelector?.('[data-ai-import]') || null;
+    if (btn) btn.disabled = true;
+    aiStatus.textContent = 'AI pobiera stronę i układa recepturę…';
+    try {
+      const recipe = normalizeRecipe(await importRecipeFromUrl(url));
+      parsed = {
+        recipe,
+        issues: [
+          ...(!recipe.name ? ['Brak nazwy receptury — sprawdź w formularzu.'] : []),
+          ...(!recipe.sections.some((sec) => sec.ingredients.length) ? ['Nie znaleziono składników — sprawdź stronę.'] : []),
+          ...(!recipe.steps.length ? ['Nie znaleziono kroków przygotowania — sprawdź stronę.'] : [])
+        ],
+        stats: {
+          ingredients: recipe.sections.reduce((n, sec) => n + sec.ingredients.length, 0),
+          steps: recipe.steps.length
+        }
+      };
+      aiStatus.textContent = 'Gotowe. Sprawdź podgląd przed zapisaniem.';
+      paintPreview();
+      setTimeout(() => preview.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    } catch (e) {
+      aiStatus.textContent = '';
+      toast(e?.message || 'Nie udało się zaimportować strony', { type: 'error', ms: 5000 });
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   }
 
   function recognize() {
     const text = textIn.value;
     if (!text.trim()) { toast('Najpierw wklej przepis', { type: 'error' }); textIn.focus(); return; }
-    const url = urlIn.value.trim();
+    const url = (manualUrlIn.value.trim() || urlIn.value.trim());
     try { parsed = parseRecipeText(text, { url: /^https?:\/\//i.test(url) ? url : '' }); }
     catch (e) { console.error(e); toast('Nie udało się rozpoznać przepisu', { type: 'error' }); return; }
     paintPreview();
     setTimeout(() => preview.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
 
-  async function translateParsed(btn) {
-    btn.disabled = true;
-    const label = btn.querySelector('span');
-    try {
-      parsed.recipe = await translateRecipe(parsed.recipe, (d, t) => { label.textContent = `Tłumaczę… ${d}/${t}`; });
-      parsed.translated = true;
-      toast('Przetłumaczono na polski');
-      paintPreview();
-    } catch (e) { toast(e.message || 'Nie udało się przetłumaczyć', { type: 'error', ms: 5000 }); btn.disabled = false; label.textContent = 'Przetłumacz na polski'; }
+  async function translate() {
+    const text = textIn.value.trim();
+    if (!text) { toast('Najpierw wklej przepis do przetłumaczenia', { type: 'error' }); return; }
+    if (!navigator.onLine) { toast('Tłumaczenie wymaga internetu', { type: 'error' }); return; }
+    await copyText(text);
+    const short = text.length <= 1500;
+    openExternal('https://translate.google.com/' + (short ? '?sl=auto&tl=pl&op=translate&text=' + encodeURIComponent(text) : '?sl=auto&tl=pl&op=translate'));
+    toast(short ? 'Otwieram Google Tłumacz. Skopiuj wynik i wklej tutaj.' : 'Tekst skopiowany — wklej go w Google Tłumaczu, a wynik tutaj.', { ms: 5000 });
   }
 
   function paintPreview() {
     if (!parsed) { preview.replaceChildren(); return; }
-    const { recipe: r, issues, stats } = parsed;
+    const { recipe: r, issues = [], stats = { ingredients: 0, steps: 0 } } = parsed;
     const kids = [
       h('section', { class: 'card stack' },
         h('h2', { class: 'card-title' }, icon('sparkle', 20), 'Rozpoznano'),
@@ -101,8 +146,6 @@ export function importView(query) {
         r.steps.length > 4 ? h('p', { class: 'muted small' }, `…i ${r.steps.length - 4} kolejnych kroków`) : null),
     ];
     if (issues.length) kids.push(h('div', { class: 'banner warn' }, h('div', { class: 'banner-text' }, h('strong', null, 'Do sprawdzenia'), h('ul', { class: 'plain small' }, issues.map((i) => h('li', null, i))))));
-    const foreign = !parsed.translated && detectLang(`${r.name} ${r.steps.map((x) => x.text).join(' ')}`) === 'en';
-    if (foreign) kids.push(button('Przetłumacz na polski', { icon: 'globe', block: true, onClick: (e) => translateParsed(e.currentTarget) }));
     kids.push(h('div', { class: 'actions-primary stack' },
       button('Popraw w formularzu', { kind: 'primary', lg: true, block: true, icon: 'edit', onClick: toForm }),
       button('Zapisz od razu', { block: true, icon: 'check', onClick: saveNow })));
@@ -126,22 +169,44 @@ export function importView(query) {
 
   const c = s.content;
   c.append(
-    h('section', { class: 'card stack' },
-      h('h2', { class: 'card-title' }, icon('globe', 20), 'Szukaj w sieci'),
-      h('p', { class: 'muted' }, 'Wyszukiwarka działa w aplikacji: znajdź przepis, zobacz podgląd i dodaj go jednym stuknięciem — z tłumaczeniem na polski.'),
-      button('Otwórz wyszukiwarkę przepisów', { kind: 'primary', icon: 'search', block: true, onClick: () => navigate('/search') }),
-      button('Wklej adres strony', { icon: 'link', block: true, onClick: () => navigate('/search') })),
-    h('section', { class: 'card stack' },
-      h('h2', { class: 'card-title' }, icon('upload', 20), 'Wklej przepis'),
-      fileIn, textIn,
-      field('Adres strony (źródło)', urlIn),
-      button('Importuj stronę przez Żarłok AI', { icon: 'sparkle', block: true, onClick: recognizeFromUrl }),
-      h('div', { class: 'row wrap gap' },
+    h('section', { class: 'card stack import-search-card' },
+      h('h2', { class: 'card-title' }, icon('globe', 20), 'Znajdź przepis'),
+      h('p', { class: 'muted' }, 'Znajdź przepis, skopiuj URL albo tekst i wróć tutaj.'),
+      h('div', { class: 'row gap' }, h('div', { class: 'grow' }, searchIn), button('Szukaj', { icon: 'search', kind: 'primary', onClick: doSearch })),
+      h('p', { class: 'muted small' }, 'Wyszukiwanie otwiera Google i wymaga internetu.')
+    ),
+    h('section', { class: 'card stack import-workflow-card' },
+      h('div', { class: 'import-flow-title' },
+        icon('sparkle', 20),
+        h('div', null,
+          h('h2', { class: 'card-title' }, 'Import receptury'),
+          h('p', { class: 'muted small' }, 'Jedna ścieżka: URL lub tekst, potem od razu rozpoznanie i podgląd.')
+        )
+      ),
+      h('div', { class: 'import-flow-steps' },
+        h('div', null, h('b', null, '1'), h('span', null, 'Skopiuj URL lub tekst')),
+        h('div', null, h('b', null, '2'), h('span', null, 'Wklej tutaj')),
+        h('div', null, h('b', null, '3'), h('span', null, 'Rozpoznaj i zapisz'))
+      ),
+      h('div', { class: 'import-url-block' },
+        field('URL strony (opcjonalnie)', urlIn),
+        button('Importuj URL przez AI', { kind: 'primary', lg: true, block: true, icon: 'sparkle', onClick: importUrlWithAI, aria: 'Importuj adres strony z AI' }),
+        aiStatus
+      ),
+      h('div', { class: 'import-divider' }, h('span', null, 'albo wklej tekst przepisu')),
+      fileIn,
+      textIn,
+      field('Adres źródła (opcjonalnie)', manualUrlIn),
+      h('div', { class: 'row wrap gap import-actions' },
         button('Wklej ze schowka', { icon: 'copy', onClick: pasteFromClipboard }),
-        button('Wczytaj plik', { icon: 'upload', kind: 'ghost', onClick: () => fileIn.click() })),
+        button('Wczytaj plik', { icon: 'upload', kind: 'ghost', onClick: () => fileIn.click() }),
+        button('Przetłumacz', { icon: 'globe', kind: 'ghost', onClick: translate })
+      ),
       button('Rozpoznaj przepis', { kind: 'primary', lg: true, block: true, icon: 'sparkle', onClick: recognize }),
-      h('p', { class: 'muted small' }, 'Obce jednostki (cups, oz, lb, °F) i nazwy składników zamieniam na polskie i metryczne. Kroki w obcym języku przetłumaczysz przyciskiem „Przetłumacz na polski” po rozpoznaniu.')),
-    preview);
+      h('p', { class: 'muted small' }, 'Podgląd, poprawki i zapis są pod tym panelem, bez szukania pola na dole ekranu.')
+    ),
+    preview
+  );
   void emptyState; void hostOf;
   return { el: s.el };
 }
