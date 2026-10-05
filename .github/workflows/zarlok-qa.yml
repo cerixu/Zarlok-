@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           APP=$(node -p "require('fs').readFileSync('util.js','utf8').match(/APP_VERSION = '([^']+)'/)[1]")
-          SW=$(node -p "require('fs').readFileSync('sw.js','utf8').match(/VERSION = 'kucharzyna-([^']+)'/)[1]")
+          SW=$(node -p "require('fs').readFileSync('sw.js','utf8').match(/VERSION = '(?:kucharzyna|zarlok)-([^']+)'/)[1]")
           echo "Application version: $APP"
           echo "Service Worker version: $SW"
           test "$APP" = "$SW"
