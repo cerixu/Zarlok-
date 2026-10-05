@@ -10,6 +10,7 @@ import { navigate, goBack } from './router.js';
 import { getRecipe, kv, patchRecipe, getSetting, setSetting, allIngredients } from './recipes.js';
 import { scaleRecipe } from './calculator.js';
 import { qtyParts } from './components.js';
+import { ingredientArtUrl } from './art.js';
 import { ingredientsInText } from './kitchen.js';
 import { findTimes } from './views-cook.js';
 import { startTimer, openTimersSheet } from './timers.js';
@@ -149,7 +150,12 @@ export function guideView({ id }) {
       h('div', { class: 'guide-kicker' }, `Krok ${st.page} z ${stepsCount()}`),
       h('p', { class: 'guide-text' }, step.text),
       ings.length ? h('div', null, h('div', { class: 'guide-sub' }, 'Potrzebne w tym kroku'),
-        h('div', { class: 'guide-chips' }, ings.map((i) => { const q = qtyParts(i); return h('span', { class: 'gchip' }, h('span', null, i.name.replace(/\s*\(.*\)\s*/, '')), h('strong', { class: 'num' }, [q.num, q.unit].filter(Boolean).join('\u00a0'))); }))) : null,
+        h('div', { class: 'guide-chips' }, ings.map((i) => {
+          const q = qtyParts(i);
+          return h('span', { class: 'gchip' },
+            h('span', { class: 'gchip-art' }, h('img', { src: ingredientArtUrl(i.name), alt: '', loading: 'lazy' })),
+            h('span', { class: 'gchip-copy' }, h('span', null, i.name.replace(/\s*\(.*\)\s*/, '')), h('strong', { class: 'num' }, [q.num, q.unit].filter(Boolean).join('\u00a0'))));
+        }))) : null,
       times.length ? h('div', { class: 'guide-timers' }, times.map((t) => button(`Minutnik: ${t.label}`, { icon: 'timer', kind: 'primary', block: true,
         onClick: () => { startTimer(t.sec, `krok ${st.page} · ${base().name}`); toast(`Minutnik: ${t.label}`); } }))) : null,
       speechSupported() ? button('Czytaj ten krok', { icon: 'volume', kind: 'ghost', onClick: () => speak(`Krok ${st.page}. ${step.text}`) }) : null);
