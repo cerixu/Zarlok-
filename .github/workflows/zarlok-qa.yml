@@ -57,8 +57,8 @@ jobs:
           import re
           from pathlib import Path
           src = Path('views-detail.js').read_text()
-          src = re.sub(r'(?ms)^import\\s+.*?;\\s*', '', src)
-          src = re.sub(r'(?m)^export\\s+', '', src)
+          src = '\\n'.join(src.splitlines()[21:])
+          src = src.replace('export ', '')
           Path('debug-detail.js').write_text(src)
           Path('debug-detail.html').write_text('<!doctype html><script src="./debug-detail.js"></script>')
           PY
