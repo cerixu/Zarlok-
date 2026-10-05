@@ -119,7 +119,19 @@ export function recipesView(query) {
       }
       if (rest.length) {
         if (trad.length) kids.push(h('h3', { class: 'group-title' }, 'Pozostałe'));
-        kids.push(h('div', { class: 'list' }, rest.map((r) => recipeCard(r))));
+        const canFeature = !vs.q && !vs.tag && !vs.maxTime && !vs.favOnly && vs.chip === 'all' && rest.length > 0;
+        if (canFeature) {
+          const featured = rest[0];
+          const tail = rest.slice(1);
+          kids.push(h('div', { class: 'ref-feature-stack' },
+            h('div', { class: 'ref-feature-back' },
+              h('span', null, 'Mamy dziś coś specjalnego'),
+              h('span', { class: 'ref-feature-fire', 'aria-hidden': 'true' }, '✦')),
+            recipeCard(featured)));
+          if (tail.length) kids.push(h('div', { class: 'list' }, tail.map((r) => recipeCard(r))));
+        } else {
+          kids.push(h('div', { class: 'list' }, rest.map((r) => recipeCard(r))));
+        }
       }
       kids.push(h('div', { class: 'import-cta' },
         h('p', { class: 'muted' }, 'Masz przepis z internetu lub ze zdjęcia książki?'),
