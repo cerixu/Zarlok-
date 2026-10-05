@@ -184,7 +184,7 @@ const ingredientAliases = [
   [/chili|papryczk/i, 'chili'],
   [/m[aą]k/i, 'flour'],
   [/mas[łl]o/i, 'butter'],
-  [/parmesan|parmigiano|pecorino|grana|grana padano|ser/i, 'cheese'],
+  [/parmesan|parmigiano|pecorino|grana|grana padano|ser\b/i, 'cheese'],
 ];
 
 const ingredientGradients = {
