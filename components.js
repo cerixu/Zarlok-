@@ -63,28 +63,55 @@ export function recipeTile(r) {
 /** Karta receptury (lista, ekran startowy). */
 export function recipeCard(r, { onFav } = {}) {
   const activeTime = (r.prepTime || 0) + (r.cookTime || 0);
-  const ingredients = (r.sections || []).flatMap((s) => s.ingredients || []).filter((i) => i.name).slice(0, 4);
+  const ingredients = (r.sections || []).flatMap((s) => s.ingredients || [])
+    .filter((i) => i.name).slice(0, 4);
+
+  const ingredientOrb = (ing) => {
+    const src = ing.photo || ing.image || ing.icon || '';
+    return h('span', {
+      class: 'ref-ingredient-orb',
+      title: ing.name,
+      'aria-label': ing.name
+    }, src
+      ? h('img', { src, alt: '', loading: 'lazy', decoding: 'async' })
+      : h('span', { class: 'ref-ingredient-fallback' }, String(ing.name).trim().slice(0, 2).toUpperCase()));
+  };
+
   return h('article', { class: 'rcard ref-recipe-card' },
-    h('a', { class: 'rcard-main', href: '#/recipe/' + encodeURIComponent(r.id), 'aria-label': r.name,
-      onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); } },
-      h('div', { class: 'ref-card-photo' },
-        h('img', { src: r.photo || r.thumb || recipeArtUrl(r), alt: '', loading: 'lazy', decoding: 'async' }),
-        h('div', { class: 'ref-card-photo-glow', 'aria-hidden': 'true' })),
-      h('div', { class: 'ref-card-body' },
-        h('div', { class: 'ref-card-topline' },
-          h('span', { class: 'ref-card-category' }, catName(r.category)),
-          r.traditional ? h('span', { class: 'ref-card-trad' }, icon('star', 13)) : null),
-        h('div', { class: 'ref-card-title' }, r.name || 'Bez nazwy'),
-        h('div', { class: 'ref-card-metrics' },
-          r.rating ? h('span', { class: 'ref-rating' }, icon('star', 14), fmtNum(r.rating, 1)) : null,
-          activeTime ? h('span', null, icon('clock', 14), fmtMinutes(activeTime)) : null,
-          r.calories ? h('span', null, fmtNum(r.calories, 0) + ' kcal') : null),
-        ingredients.length ? h('div', { class: 'ref-card-ingredients' },
-          ingredients.map((i) => h('span', { class: 'ref-mini-ingredient', title: i.name }, i.name))) : null,
-        h('div', { class: 'ref-card-footer' },
-          h('span', null, 'Pokaż więcej szczegółów', icon('down', 14)),
-          heartBtn(r, onFav))),
-      h('span', { class: 'ref-card-tap', 'aria-hidden': 'true' })));
+    h('div', { class: 'ref-card-surface' },
+      h('a', {
+        class: 'rcard-main',
+        href: '#/recipe/' + encodeURIComponent(r.id),
+        'aria-label': r.name,
+        onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); }
+      },
+        h('div', { class: 'ref-card-photo' },
+          h('img', {
+            src: r.photo || r.thumb || recipeArtUrl(r),
+            alt: '',
+            loading: 'lazy',
+            decoding: 'async'
+          }),
+          h('div', { class: 'ref-card-photo-shade', 'aria-hidden': 'true' })),
+        h('div', { class: 'ref-card-body' },
+          h('div', { class: 'ref-card-header' },
+            h('div', { class: 'ref-card-copy' },
+              h('h3', { class: 'ref-card-title' }, r.name || 'Bez nazwy'),
+              r.description ? h('p', { class: 'ref-card-description' }, r.description) : null),
+            h('div', { class: 'ref-card-rating' },
+              h('span', null, fmtNum(r.rating || 4.8, 1)),
+              icon('star', 13))),
+          h('div', { class: 'ref-card-kcal' },
+            r.calories ? fmtNum(r.calories, 0) + 'kcal' : activeTime ? fmtMinutes(activeTime) : ''),
+          h('div', { class: 'ref-card-ingredients-title' }, 'ingredients'),
+          ingredients.length ? h('div', { class: 'ref-card-ingredients' },
+            ingredients.map((i) => ingredientOrb(i))) : null,
+          h('div', { class: 'ref-card-footer' },
+            h('span', null, 'Show more details'),
+            icon('down', 15))),
+      ),
+      h('div', { class: 'ref-card-actions' },
+        heartBtn(r, onFav))));
 }
 export function sectionHead(title, { action, onAction, count } = {}) {
   return h('div', { class: 'sechead' },
