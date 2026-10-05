@@ -133,6 +133,22 @@ async function main() {
     await assertAccessibleControls(page, hash);
   }
 
+  // Vertical scrolling regression: the app shell must scroll inside .scroll on iPhone.
+  await page.goto(BASE_URL + '#/recipes', { waitUntil: 'networkidle', timeout: 30000 });
+  await sleep(250);
+  const scrollState = await page.locator('.scroll').evaluate((el) => {
+    const before = el.scrollTop;
+    const max = Math.max(0, el.scrollHeight - el.clientHeight);
+    el.scrollTo(0, Math.min(600, max));
+    return { before, after: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight };
+  });
+  console.log('SCROLL_CHECK', JSON.stringify(scrollState));
+  if (scrollState.scrollHeight > scrollState.clientHeight + 2 && scrollState.after <= scrollState.before) {
+    throw new Error('App content did not scroll vertically inside .scroll');
+  }
+
+  
+
   // Keyboard/focus regression: focus should remain visible inside the iPhone viewport.
   await page.goto(BASE_URL + '#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
   await page.getByRole('button', { name: /Dodaj produkt/i }).first().click();
