@@ -4224,3 +4224,10 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
   .recipe-catalog-card:active,
   .ref-ingredient-more:active { transform: none; }
 }
+
+/* Katalog: zewnętrzny kontener filtrów nie przewija się jako jedna linia. */
+.recipes .chips {
+  display: block;
+  overflow: visible;
+  padding: 0 2px;
+}
