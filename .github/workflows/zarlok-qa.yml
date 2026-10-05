@@ -90,7 +90,8 @@ jobs:
             version: window.__kucharzyna?.ready ? 'ready' : 'not-ready'
           }));
           console.log(JSON.stringify({ state, errors }, null, 2));
-          if (errors.length || !state.bootGone || state.version !== 'ready') {
+          const started = !state.boot || state.bootGone;
+          if (errors.length || !started || state.version !== 'ready') {
             throw new Error('Browser startup failed: ' + JSON.stringify({ state, errors }));
           }
           await browser.close();
