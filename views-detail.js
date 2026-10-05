@@ -18,7 +18,7 @@ import { fmtAmount, fmtNum, fmtPct, fmtMoney, fmtMinutes, fmtDateTime, fmtDate, 
 import { heartBtn, tradMark, qtyParts, recipeToText, originOf } from './components.js';
 import { openAddToShopping } from './shopping.js';
 import { hostOf } from './importer.js';
-import { recipeArtUrl } from './art.js';
+import { recipeArtUrl, ingredientArtUrl } from './art.js';
 
 const KIND_LABEL = { flour: 'mąka', water: 'woda', salt: 'sól', yeast: 'drożdże', fat: 'tłuszcz', other: '' };
 
@@ -353,9 +353,9 @@ export function detailView({ id }) {
     const all = allIngredients(r).filter((i) => i.name);
     const preview = all.slice(0, 4);
     const ingredientOrb = (ing) => {
-      const src = ing.photo || ing.image || ing.icon || '';
+      const src = ing.photo || ing.image || ingredientArtUrl(ing.name);
       return h('div', { class: 'ref-ingredient-orb', title: ing.name, 'aria-label': ing.name },
-        src ? h('img', { src, alt: '', loading: 'lazy' }) : h('span', null, String(ing.name).trim().slice(0, 2).toUpperCase()));
+        h('img', { src, alt: '', loading: 'lazy' }));
     };
     const stat = (value, label, cls = '') => h('span', { class: 'ref-detail-stat ' + cls }, h('strong', null, value), h('small', null, label));
 
