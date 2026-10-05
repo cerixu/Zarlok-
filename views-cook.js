@@ -9,14 +9,11 @@ import { getRecipe, patchRecipe, getSetting } from './recipes.js';
 import { kv } from './db.js';
 import { recordCook } from './history.js';
 import { consumeRecipeIngredients } from './inventory.js';
-import { addItems } from './shopping.js';
+import { addItems, addLowStockToShopping } from './shopping.js';
 import { scaleRecipe, factorFromServings } from './calculator.js';
 import { qtyParts } from './components.js';
 import { fmtNum, debounce, parseNum } from './util.js';
 import { startTimer, openTimersSheet } from './timers.js';
-import { consumeRecipeIngredients } from './inventory.js';
-import { addItems, addLowStockToShopping } from './shopping.js';
-import { recordCook } from './history.js';
 
 /* ---------- Widok ---------- */
 
