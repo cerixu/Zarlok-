@@ -8,6 +8,7 @@ import {
   h, icon, screen, button, iconBtn, toast, openSheet, confirmDialog, emptyState, field, textInput, numInput, selectEl, segmented,
 } from './ui.js';
 import { navigate } from './router.js';
+import { loadInventory, listInventory, findInventoryMatch, unitCompatible, unitToBase, unitFromBase, receiveStock } from './inventory.js';
 
 /* ---------- Logika ---------- */
 
@@ -44,7 +45,43 @@ export async function addItems(items) {
 }
 
 export async function updateItem(item, patch) { Object.assign(item, patch); await persist([item]); }
-export const toggleItem = (item) => updateItem(item, { done: !item.done });
+export async function markPurchased(item) {
+  if (!item || item.done) return { changed: false, reason: 'already-done' };
+  if (item.amount == null || !(Number(item.amount) > 0)) {
+    item.done = true; await persist([item]); return { changed: true, received: false };
+  }
+  const stock = await receiveStock(item.name, item.amount, item.unit || 'szt', { reason: 'shopping' });
+  if (!stock.changed) return stock;
+  item.done = true; item.inventoryId = stock.item.id; item.inventoryDelta = stock.delta; item.inventoryReceivedAt = Date.now();
+  await persist([item]);
+  return { changed: true, received: true, stock };
+}
+export async function addLowStockToShopping() {
+  await loadInventory();
+  const missing = [];
+  for (const item of listInventory()) {
+    const min = Number(item.minQuantity || 0), target = Number(item.targetQuantity || 0), qty = Number(item.quantity || 0);
+    if (!(min > 0) || qty > min || !(target > qty)) continue;
+    const needed = unitToBase(target - qty, item.unit);
+    const pending = state.shopping.filter(x=>!x.done&&norm(x.name)===norm(item.name)&&x.amount!=null&&unitCompatible(x.unit,item.unit)).reduce((s,x)=>s+unitToBase(Number(x.amount||0),x.unit),0);
+    const remaining = Math.max(0, needed - pending);
+    if (remaining > 0) missing.push({name:item.name,amount:unitFromBase(remaining,item.unit),unit:item.unit,recipeName:'Magazyn · uzupełnienie stanu'});
+  }
+  return missing.length ? {...(await addItems(missing)),items:missing} : {count:0,merged:0,items:[]};
+}
+export async function addMissingFromRecipe(recipe, factor=1) {
+  await loadInventory();
+  const missing=[];
+  for (const ing of (recipe?.sections||[]).flatMap(s=>s.ingredients||[])) {
+    if (!ing?.name || ing.amount==null || ing.unit==='%') continue;
+    const required=Number(ing.amount)*Number(factor||1); if (!(required>0)) continue;
+    const stock=findInventoryMatch(ing)?.item;
+    if (!stock || !unitCompatible(stock.unit,ing.unit)) { missing.push({name:ing.name,amount:required,unit:ing.unit,recipeId:recipe.id,recipeName:recipe.name}); continue; }
+    const need=unitToBase(required,ing.unit), have=unitToBase(stock.quantity,stock.unit);
+    if (have<need) missing.push({name:ing.name,amount:unitFromBase(need-have,ing.unit),unit:ing.unit,recipeId:recipe.id,recipeName:recipe.name});
+  }
+  return missing.length ? {...(await addItems(missing)),items:missing} : {count:0,merged:0,items:[]};
+}
 export async function deleteItem(item) { state.shopping = state.shopping.filter((x) => x.id !== item.id); await persist([], [item]); }
 export async function clearDone() { const gone = state.shopping.filter((x) => x.done); state.shopping = state.shopping.filter((x) => !x.done); await persist([], gone); return gone.length; }
 export async function clearAllItems() { const gone = state.shopping; state.shopping = []; await persist([], gone); }
@@ -187,10 +224,10 @@ export function shoppingView() {
 
   function itemRow(item) {
     const cb = h('button', { type: 'button', class: 'shop-check' + (item.done ? ' on' : ''), role: 'checkbox', 'aria-checked': !!item.done, 'aria-label': `${item.name}: ${item.done ? 'kupione' : 'do kupienia'}`,
-      onClick: () => toggleItem(item) }, icon('check', 20));
+      onClick: async () => { try { const r = await markPurchased(item); if (r.changed) toast(r.received ? 'Kupione · dodano do Magazynu 📦' : 'Odhaczono'); else if (r.reason === 'unit-mismatch') toast('Nie dodano do Magazynu: niezgodna jednostka.', { type: 'error' }); } catch(e) { toast(e.message || 'Nie udało się oznaczyć zakupu.', { type: 'error' }); } } }, icon('check', 20));
     return h('div', { class: 'shop-item' + (item.done ? ' done' : '') },
       cb,
-      h('button', { type: 'button', class: 'shop-main', onClick: () => toggleItem(item) },
+      h('button', { type: 'button', class: 'shop-main', onClick: async () => { try { const r = await markPurchased(item); if (r.changed) toast(r.received ? 'Kupione · dodano do Magazynu 📦' : 'Odhaczono'); } catch(e) { toast(e.message || 'Nie udało się oznaczyć zakupu.', { type: 'error' }); } } },
         h('span', { class: 'shop-name' }, item.name),
         item.recipeName && groupMode() !== 'recipe' ? h('span', { class: 'shop-from muted' }, item.recipeName) : null),
       h('span', { class: 'shop-qty num' }, qtyText(item)),
