@@ -53,8 +53,8 @@ export function thumbEl(r, cls = '') {
 
 /** Duży kafelek do poziomych list (Start). */
 export function recipeTile(r) {
-  return h('a', { class: 'rtile', href: '#/recipe/' + encodeURIComponent(r.id), 'aria-label': r.name,
-    onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); } },
+  return h('a', { class: 'rtile', href: '#/recipe/' + encodeURIComponent(r.id) + '?details=1', 'aria-label': r.name,
+    onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id) + '?details=1'); } },
     h('div', { class: 'rtile-img' }, h('img', { src: r.thumb || recipeArtUrl(r), alt: '', loading: 'lazy', decoding: 'async' }), r.traditional ? h('span', { class: 'rtile-badge' }, tradMark(r)) : null),
     h('div', { class: 'rtile-name' }, r.name || 'Bez nazwy'),
     h('div', { class: 'rtile-meta' }, metaLine(r)));
