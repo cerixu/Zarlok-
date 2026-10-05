@@ -8,6 +8,7 @@
 import { db, kv } from './db.js';
 import { uid, norm, fmtAmount, fmtMinutes, fmtDateTime, flagEmoji } from './util.js';
 import { SEED_TEXT, parseSeeds } from './seeds.js';
+import { recipeLibrary } from './recipe-library.js';
 
 /* ---------- Kategorie i kraje ---------- */
 
@@ -49,6 +50,7 @@ export const DEFAULT_SETTINGS = {
   proxyUrl: '',
   mmEmail: '',            // opcjonalny e-mail dla MyMemory (większy dzienny limit tłumaczeń)
   autoTranslate: true,
+  archiveSeeded: false,
   inventoryAutoConsumption: true,
   inventoryAutoShopping: true,
 };
@@ -377,7 +379,11 @@ const T = (text) => blankStep(text);
 const LEGACY_SEED_IDS = ['rcp_seed_pizza', 'rcp_seed_carbonara', 'rcp_seed_sos'];
 
 export function seedRecipes() {
-  return [...handSeeds(), ...parseSeeds(SEED_TEXT, { blankRecipe, blankIngredient, blankSection, blankStep })];
+  return [
+    ...handSeeds(),
+    ...parseSeeds(SEED_TEXT, { blankRecipe, blankIngredient, blankSection, blankStep }),
+    ...recipeLibrary(),
+  ];
 }
 
 function handSeeds() {
@@ -444,6 +450,8 @@ function handSeeds() {
 }
 
 /** Dodaje przykładowe receptury, jeśli ich brakuje (nie nadpisuje edytowanych). */
+  // Biblioteka archiwalna jest traktowana jak dane startowe. ID są stabilne,
+  // więc użytkownik nie dostaje duplikatów ani ponownego przywracania usuniętych rekordów.
 export async function restoreSeeds() {
   const all = seedRecipes();
   const seeds = all.filter((r) => !state.recipes.has(r.id));
