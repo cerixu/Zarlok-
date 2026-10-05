@@ -25,6 +25,14 @@ const KIND_LABEL = { flour: 'mąka', water: 'woda', salt: 'sól', yeast: 'drożd
 
 export function detailView({ id }, query) {
   const expanded = !!(query && query.get('details') === '1');
+  let leaving = false;
+  const leaveRecipe = (fallback = '/recipes') => {
+    if (leaving) return;
+    leaving = true;
+    const node = document.querySelector('.recipe-fullscreen');
+    if (node) node.classList.add('is-leaving');
+    setTimeout(() => goBack(fallback), node ? 180 : 0);
+  };
   const base0 = getRecipe(id);
   if (!base0) {
     const s = screen({ title: 'Receptura', left: iconBtn('left', 'Wstecz', () => goBack('/recipes')) },
@@ -434,7 +442,7 @@ export function detailView({ id }, query) {
       }),
       h('div', { class: 'recipe-full-hero-shade', 'aria-hidden': 'true' }),
       h('div', { class: 'recipe-full-top' },
-        iconBtn('left', 'Wstecz', () => goBack('/recipe/' + encodeURIComponent(id)), 'ref-card-nav'),
+        iconBtn('left', 'Wstecz', () => leaveRecipe('/recipes'), 'ref-card-nav'),
         h('div', { class: 'ref-card-nav-group' },
           heartBtn(base()),
           iconBtn('more', 'Więcej', () => openMore(), 'ref-card-nav'))),
