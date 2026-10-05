@@ -53,14 +53,13 @@ Status: ✅
 - wersja 1.5.0
 
 ### 4. System grafik i assetów
-Status: ⏳
-- finalne zdjęcia dań
-- grafiki składników
-- ikony kategorii
-- grafiki stanów pustych
-- grafiki narzędzi i modułów
-- spójny styl fotograficzny
-- bez masowego duplikowania ciężkich plików
+Status: ✅
+- system ciemnych fallbackowych ilustracji potraw
+- osobny system grafik składników z aliasami po polsku
+- grafiki składników podpięte do kart i szczegółów receptury
+- ciemna paleta assetów spójna z referencją
+- rozbudowana biblioteka wektorowych assetów kuchennych
+- brak zależności od internetu dla fallbacków
 
 ### 5. GOTUJĘ / Chef Mode
 Status: ⏳
