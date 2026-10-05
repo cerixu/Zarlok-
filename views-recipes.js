@@ -7,7 +7,7 @@ import {
 } from './ui.js';
 import { navigate } from './router.js';
 import {
-  state, subscribe, listRecipes, searchText, allTags, saveCategory, deleteCategory, reorderCategories, getSetting, setSetting, catIcon,
+  state, subscribe, listRecipes, searchText, allTags, saveCategory, deleteCategory, reorderCategories, getSetting, setSetting, catIcon, ORIGINS,
 } from './recipes.js';
 import { norm, debounce, uid } from './util.js';
 import { recipeCard } from './components.js';
@@ -17,7 +17,7 @@ const SORTS = [
 ];
 
 // Stan widoku zostaje w pamięci, więc po powrocie z receptury lista wygląda tak samo.
-const vs = { q: '', chip: 'all', tag: '', maxTime: 0, favOnly: false };
+const vs = { q: '', chip: 'all', tag: '', origin: '', maxTime: 0, favOnly: false, limit: 30 };
 
 const activeTime = (r) => (r.prepTime || 0) + (r.cookTime || 0);
 
@@ -66,6 +66,7 @@ export function recipesView(query) {
     else if (vs.chip !== 'all') list = list.filter((r) => r.category === vs.chip);
     if (vs.favOnly) list = list.filter((r) => r.favorite);
     if (vs.tag) list = list.filter((r) => r.tags.includes(vs.tag));
+    if (vs.origin) list = list.filter((r) => r.origin === vs.origin);
     if (vs.maxTime) list = list.filter((r) => { const t = activeTime(r); return t > 0 && t <= vs.maxTime; });
     if (words.length) list = list.filter((r) => { const t = searchText(r); return words.every((w) => t.includes(w)); });
     const sortKey = vs.chip === 'recent' ? 'recent' : getSetting('sort') || 'name';
@@ -80,22 +81,30 @@ export function recipesView(query) {
   function paintChips() {
     const all = listRecipes();
     const used = new Set(all.map((r) => r.category));
-    const mk = (id, label, n) => h('button', { type: 'button', class: 'chip' + (vs.chip === id ? ' on' : ''), 'aria-pressed': vs.chip === id,
-      onClick: () => { vs.chip = id; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
-    const kids = [
+    const mk = (id, label, n, cls = '') => h('button', { type: 'button', class: 'chip ' + cls + (vs.chip === id ? ' on' : ''), 'aria-pressed': vs.chip === id,
+      onClick: () => { vs.chip = id; vs.limit = 30; paint(); } }, label, n != null ? h('span', { class: 'chip-n' }, String(n)) : null);
+
+    const quick = [
       mk('all', 'Wszystkie', all.length),
       mk('fav', '★ Ulubione', all.filter((r) => r.favorite).length),
       mk('recent', 'Ostatnie', all.filter((r) => r.lastOpenedAt).length),
       mk('trad', 'Tradycyjne', all.filter((r) => r.traditional).length),
-      ...state.categories.filter((c) => used.has(c.id) || vs.chip === c.id).map((c) => mk(c.id, `${c.icon || ''} ${c.name}`.trim(), all.filter((r) => r.category === c.id).length)),
-      h('button', { type: 'button', class: 'chip ghost', 'aria-label': 'Zarządzaj kategoriami', onClick: () => openCategoryManager() }, icon('sliders', 16), 'Kategorie'),
     ];
-    chips.replaceChildren(...kids);
-    const on = chips.querySelector('.chip.on');
-    if (on && on.scrollIntoView) { try { on.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (_) { /* */ } }
+    const cats = state.categories
+      .filter((c) => used.has(c.id) || vs.chip === c.id)
+      .map((c) => mk(c.id, [c.icon || '', c.name].filter(Boolean).join(' '), all.filter((r) => r.category === c.id).length, 'category-chip'));
+
+    quick.push(h('button', { type: 'button', class: 'chip ghost category-manage', 'aria-label': 'Zarządzaj kategoriami', onClick: () => openCategoryManager() }, icon('sliders', 16), 'Kategorie'));
+
+    chips.replaceChildren(
+      h('div', { class: 'catalog-filter-label' }, 'Szybki dostęp'),
+      h('div', { class: 'chips-row quick' }, ...quick),
+      h('div', { class: 'catalog-filter-label category-label' }, 'Kategorie'),
+      h('div', { class: 'chips-row categories' }, ...cats)
+    );
   }
 
-  const filterActive = () => !!(vs.tag || vs.maxTime || vs.favOnly);
+  const filterActive = () => !!(vs.tag || vs.origin || vs.maxTime || vs.favOnly);
 
   function paint() {
     clear.hidden = !search.value;
@@ -103,36 +112,51 @@ export function recipesView(query) {
     paintChips();
     const { trad, rest, total } = matches();
     const kids = [];
+
     if (!state.recipes.size) {
       kids.push(emptyState('📒', 'Brak receptur', 'Dodaj swoją pierwszą recepturę albo wklej przepis z internetu.',
         button('Nowa receptura', { kind: 'primary', icon: 'plus', onClick: () => navigate('/new') }),
         button('Importuj', { icon: 'upload', onClick: () => navigate('/import') })));
     } else if (!total) {
-      kids.push(emptyState('🔎', 'Nic nie znaleziono', vs.q ? `Brak wyników dla „${vs.q}”.` : 'Zmień filtry lub wyszukiwanie.',
-        button('Wyczyść filtry', { onClick: () => { Object.assign(vs, { q: '', chip: 'all', tag: '', maxTime: 0, favOnly: false }); search.value = ''; paint(); } }),
+      kids.push(emptyState('🔎', 'Nic nie znaleziono', vs.q ? 'Brak wyników dla „' + vs.q + '”.' : 'Zmień filtry lub wyszukiwanie.',
+        button('Wyczyść filtry', { onClick: () => { Object.assign(vs, { q: '', chip: 'all', tag: '', origin: '', maxTime: 0, favOnly: false, limit: 30 }); search.value = ''; paint(); } }),
         button('Szukaj w internecie', { icon: 'globe', onClick: () => navigate('/search?q=' + encodeURIComponent(vs.q || '')) })));
     } else {
-      kids.push(h('p', { class: 'muted counter' }, `${total} ${total === 1 ? 'receptura' : total % 10 >= 2 && total % 10 <= 4 && (total % 100 < 10 || total % 100 >= 20) ? 'receptury' : 'receptur'}`));
+      const labelMap = new Map(state.categories.map((c) => [c.id, c.name]));
+      const activeLabel = vs.chip === 'all' ? 'Wszystkie receptury'
+        : vs.chip === 'fav' ? 'Ulubione'
+        : vs.chip === 'recent' ? 'Ostatnio otwierane'
+        : vs.chip === 'trad' ? 'Tradycyjne'
+        : labelMap.get(vs.chip) || 'Receptury';
+
+      kids.push(h('div', { class: 'catalog-heading' },
+        h('div', null,
+          h('h2', null, activeLabel),
+          h('p', { class: 'muted' }, vs.q ? 'Wyniki wyszukiwania dla „' + vs.q + '”' : 'Wybierz kategorię albo kuchnię, żeby szybko zawęzić listę.')),
+        h('span', { class: 'catalog-count' }, String(total))));
+
+      const visible = Math.min(vs.limit, total);
+
       if (trad.length) {
-        if (rest.length) kids.push(h('h3', { class: 'group-title' }, icon('star', 16), 'Tradycyjne'));
-        kids.push(h('div', { class: 'list' }, trad.map((r) => recipeCard(r))));
+        const shownTrad = trad.slice(0, visible);
+        kids.push(h('div', { class: 'catalog-group-title' }, icon('star', 15), 'Tradycyjne', h('span', { class: 'muted' }, trad.length)));
+        kids.push(h('div', { class: 'list' }, shownTrad.map((r) => recipeCard(r))));
       }
       if (rest.length) {
-        if (trad.length) kids.push(h('h3', { class: 'group-title' }, 'Pozostałe'));
-        const canFeature = !vs.q && !vs.tag && !vs.maxTime && !vs.favOnly && vs.chip === 'all' && rest.length > 0;
-        if (canFeature) {
-          const featured = rest[0];
-          const tail = rest.slice(1);
-          kids.push(h('div', { class: 'ref-feature-stack' },
-            h('div', { class: 'ref-feature-back' },
-              h('span', null, 'Mamy dziś coś specjalnego'),
-              h('span', { class: 'ref-feature-fire', 'aria-hidden': 'true' }, '✦')),
-            recipeCard(featured)));
-          if (tail.length) kids.push(h('div', { class: 'list' }, tail.map((r) => recipeCard(r))));
-        } else {
-          kids.push(h('div', { class: 'list' }, rest.map((r) => recipeCard(r))));
-        }
+        const remainingAfterTrad = Math.max(0, visible - trad.length);
+        const shownRest = rest.slice(0, remainingAfterTrad);
+        if (trad.length) kids.push(h('div', { class: 'catalog-group-title' }, 'Pozostałe', h('span', { class: 'muted' }, rest.length)));
+        if (shownRest.length) kids.push(h('div', { class: 'list' }, shownRest.map((r) => recipeCard(r))));
       }
+
+      if (visible < total) {
+        kids.push(h('div', { class: 'catalog-more' },
+          h('p', { class: 'muted' }, 'Pokazano ' + visible + ' z ' + total + ' receptur'),
+          button('Pokaż kolejne 30', { icon: 'down', block: true, onClick: () => { vs.limit += 30; paint(); requestAnimationFrame(() => s.scroll.scrollBy({ top: 160, behavior: 'smooth' })); } })));
+      } else if (total > 30) {
+        kids.push(h('p', { class: 'catalog-complete muted' }, 'Wyświetlono wszystkie ' + total + ' receptur'));
+      }
+
       kids.push(h('div', { class: 'import-cta' },
         h('p', { class: 'muted' }, 'Masz przepis z internetu lub ze zdjęcia książki?'),
         h('div', { class: 'row wrap center' },
@@ -153,17 +177,18 @@ export function recipesView(query) {
   }
 
   function openFilters() {
-    let tag = vs.tag, maxTime = vs.maxTime, favOnly = vs.favOnly;
+    let tag = vs.tag, origin = vs.origin, maxTime = vs.maxTime, favOnly = vs.favOnly;
     const tags = allTags();
     openSheet({
       title: 'Filtry', variant: 'sheet',
       body: h('div', { class: 'stack' },
         switchEl(favOnly, (v) => { favOnly = v; }, 'Tylko ulubione'),
+        field('Kuchnia / kraj', selectEl([['', 'Wszystkie'], ...ORIGINS.map((o) => [o.code, o.flag + ' ' + o.name])], origin, (v) => { origin = v; })),
         field('Tag', selectEl([['', 'Dowolny'], ...tags.map((t) => [t, t])], tag, (v) => { tag = v; })),
         field('Czas czynny (przygotowanie + gotowanie)', selectEl([[0, 'Dowolny'], [15, 'do 15 min'], [30, 'do 30 min'], [60, 'do 1 h'], [120, 'do 2 h']], maxTime, (v) => { maxTime = +v; }))),
       actions: [
-        { label: 'Wyczyść', kind: 'ghost', onClick: () => { Object.assign(vs, { tag: '', maxTime: 0, favOnly: false }); paint(); } },
-        { label: 'Zastosuj', kind: 'primary', onClick: () => { Object.assign(vs, { tag, maxTime, favOnly }); paint(); } },
+        { label: 'Wyczyść', kind: 'ghost', onClick: () => { Object.assign(vs, { tag: '', origin: '', maxTime: 0, favOnly: false, limit: 30 }); paint(); } },
+        { label: 'Zastosuj', kind: 'primary', onClick: () => { Object.assign(vs, { tag, origin, maxTime, favOnly, limit: 30 }); paint(); } },
       ],
     });
   }
