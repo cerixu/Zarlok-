@@ -136,6 +136,19 @@ jobs:
           if (pwaState.appleStandalone.toLowerCase() !== 'yes') throw new Error('Apple standalone meta missing');
           if (!pwaState.serviceWorkerSupported) throw new Error('Service Worker API unavailable');
 
+          // Accessibility smoke: interactive controls need an accessible name.
+          const unnamedControls = await page.evaluate(() => [...document.querySelectorAll('button,a,input,textarea,select')]
+            .filter(el => {
+              const hidden = el.getAttribute('aria-hidden') === 'true' || el.offsetParent === null;
+              if (hidden) return false;
+              const text = (el.innerText || el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('placeholder') || '').trim();
+              return !text;
+            })
+            .slice(0, 20)
+            .map(el => ({tag: el.tagName, cls: el.className, html: el.outerHTML.slice(0, 180)})));
+          console.log('A11Y_UNNAMED', JSON.stringify(unnamedControls));
+          if (unnamedControls.length) throw new Error('Unnamed interactive controls found: ' + JSON.stringify(unnamedControls));
+
           // Functional smoke: Magazyn
           await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
           await page.getByRole('button', { name: /Dodaj produkt/i }).first().click();
