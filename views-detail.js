@@ -473,6 +473,7 @@ export function detailView({ id }, query) {
         h('div', { class: 'recipe-full-primary' },
           button('GOTUJĘ', { kind: 'primary', lg: true, block: true, icon: 'chef', onClick: () => navigate('/guide/' + id) })))
     );
+    const detailsAnchor = h('div', { class: 'ref-details-anchor', 'aria-hidden': 'true' });
     const sourceFoot = h('div', { class: 'meta-foot muted small' },
       base().source ? h('div', null, 'Źródło: ', base().source) : null,
       base().sourceUrl ? h('div', null, h('a', { class: 'ext', href: base().sourceUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 16), hostOf(base().sourceUrl) || base().sourceUrl)) : null,
@@ -484,6 +485,7 @@ export function detailView({ id }, query) {
       s.content.replaceChildren(
         h('div', { class: 'recipe-fullscreen' },
           fullHero,
+          detailsAnchor,
           details,
           sourceFoot)
       );
