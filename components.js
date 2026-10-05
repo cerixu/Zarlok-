@@ -64,11 +64,11 @@ export function recipeTile(r) {
 export function recipeCard(r, { onFav } = {}) {
   const activeTime = (r.prepTime || 0) + (r.cookTime || 0);
   const ingredients = (r.sections || []).flatMap((s) => s.ingredients || []).filter((i) => i.name);
-  const preview = ingredients.slice(0, 3);
   const origin = originOf(r.origin);
   const category = catName(r.category);
+  const tags = Array.isArray(r.tags) ? r.tags.filter(Boolean).slice(0, 2) : [];
 
-  return h('article', { class: 'rcard ref-recipe-card' },
+  return h('article', { class: 'rcard recipe-catalog-card' },
     h('div', { class: 'ref-card-surface' },
       h('a', {
         class: 'rcard-main',
@@ -76,36 +76,30 @@ export function recipeCard(r, { onFav } = {}) {
         'aria-label': r.name,
         onClick: (e) => { e.preventDefault(); navigate('/recipe/' + encodeURIComponent(r.id)); }
       },
-        h('div', { class: 'ref-card-photo' },
+        h('div', { class: 'catalog-photo' },
           h('img', {
             src: r.photo || r.thumb || recipeArtUrl(r),
             alt: '',
             loading: 'lazy',
             decoding: 'async'
           }),
-          h('div', { class: 'ref-card-photo-shade', 'aria-hidden': 'true' })),
-        h('div', { class: 'ref-card-body' },
-          h('div', { class: 'ref-card-topline' },
-            h('span', { class: 'ref-card-category' }, category || 'Inne'),
-            origin ? h('span', { class: 'ref-card-origin' }, origin.flag, ' ', origin.name) : null,
-            r.traditional ? h('span', { class: 'ref-card-trad', title: 'Tradycyjna receptura' }, icon('star', 13)) : null),
-          h('div', { class: 'ref-card-header' },
-            h('div', { class: 'ref-card-copy' },
-              h('h3', { class: 'ref-card-title' }, r.name || 'Bez nazwy'),
-              r.description ? h('p', { class: 'ref-card-description' }, r.description) : null),
-            r.rating ? h('div', { class: 'ref-card-rating' }, h('span', null, fmtNum(r.rating, 1)), icon('star', 13)) : null),
-          h('div', { class: 'ref-card-metrics' },
-            activeTime ? h('span', null, icon('clock', 14), fmtMinutes(activeTime)) : null,
-            r.servings ? h('span', null, icon('user', 14), fmtNum(r.servings, 1) + ' porcji') : null,
-            r.calories ? h('span', null, fmtNum(r.calories, 0) + ' kcal') : null),
-          preview.length ? h('div', { class: 'ref-card-ingredients' },
-            preview.map((i) => h('span', { class: 'ref-mini-ingredient' }, i.name)),
-            ingredients.length > preview.length ? h('span', { class: 'ref-mini-ingredient ref-mini-more' }, '+' + (ingredients.length - preview.length)) : null) : null,
-          h('div', { class: 'ref-card-footer' },
-            h('span', null, 'Otwórz recepturę', icon('right', 14))),
-      ),
-      h('div', { class: 'ref-card-actions' }, heartBtn(r, onFav))));
+          h('div', { class: 'catalog-photo-shade', 'aria-hidden': 'true' })),
+        h('div', { class: 'catalog-body' },
+          h('div', { class: 'catalog-badges' },
+            category ? h('span', { class: 'catalog-category' }, category) : null,
+            origin ? h('span', { class: 'catalog-origin' }, origin.flag, ' ', origin.name) : null,
+            r.traditional ? h('span', { class: 'catalog-trad', title: 'Tradycyjna receptura' }, icon('star', 12), ' Tradycyjna') : null),
+          h('h3', { class: 'catalog-title' }, r.name || 'Bez nazwy'),
+          h('div', { class: 'catalog-meta' },
+            activeTime ? h('span', null, icon('clock', 13), fmtMinutes(activeTime)) : null,
+            r.fermentTime ? h('span', null, 'ferm. ' + fmtMinutes(r.fermentTime)) : null,
+            r.servings ? h('span', null, icon('user', 13), fmtNum(r.servings, 1) + ' porcji') : null,
+            ingredients.length ? h('span', null, ingredients.length + (ingredients.length === 1 ? ' składnik' : ingredients.length < 5 ? ' składniki' : ' składników')) : null),
+          tags.length ? h('div', { class: 'catalog-tags' }, tags.map((t) => h('span', null, t))) : null,
+          r.source ? h('div', { class: 'catalog-source' }, 'Źródło: ', h('span', null, r.source)) : null)),
+      h('div', { class: 'catalog-favorite' }, heartBtn(r, onFav))));
 }
+
 export function sectionHead(title, { action, onAction, count } = {}) {
   return h('div', { class: 'sechead' },
     h('h2', null, title, count != null ? h('span', { class: 'count' }, String(count)) : null),
