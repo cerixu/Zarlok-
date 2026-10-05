@@ -5,7 +5,8 @@
    ========================================================================== */
 import { h, icon, screen, button, iconBtn, toast, openSheet, confirmDialog, numInput, textArea, field, emptyState } from './ui.js';
 import { navigate, goBack } from './router.js';
-import { getRecipe, kv, patchRecipe, getSetting } from './recipes.js';
+import { getRecipe, patchRecipe, getSetting } from './recipes.js';
+import { kv } from './db.js';
 import { scaleRecipe, factorFromServings } from './calculator.js';
 import { qtyParts } from './components.js';
 import { fmtNum, debounce, parseNum } from './util.js';
