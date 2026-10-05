@@ -7,7 +7,7 @@
    ========================================================================== */
 
 const DB_NAME = 'kucharzyna-db';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const FALLBACK_CACHE = 'zarlok-storage-v1';
 const FALLBACK_PREFIX = 'zarlok-store:';
 const OPEN_TIMEOUT = 2500;
@@ -59,10 +59,28 @@ const nativeOpen = () => new Promise((resolve, reject) => {
       try {
         const d = rq.result;
         for (const [name, keyPath] of Object.entries(STORES)) {
-          if (!d.objectStoreNames.contains(name)) {
-            const s = d.createObjectStore(name, { keyPath });
-            if (name === 'history') s.createIndex('recipeId', 'recipeId');
-          }
+          if (!d.objectStoreNames.contains(name)) d.createObjectStore(name, { keyPath });
+        }
+        const indexDefs = {
+          history: [['recipeId','recipeId']],
+          cookHistory: [['recipeId','recipeId'], ['at','at']],
+          cookSessions: [['updatedAt','updatedAt']],
+          drafts: [['recipeId','recipeId'], ['savedAt','savedAt']],
+          inventory: [['ean','ean'], ['name','name'], ['updatedAt','updatedAt']],
+          inventoryLog: [['ingredientId','ingredientId'], ['type','type'], ['at','at']],
+          deliveries: [['supplierId','supplierId'], ['at','at']],
+          lots: [['inventoryId','inventoryId'], ['expiryAt','expiryAt']],
+          stockMovements: [['inventoryId','inventoryId'], ['at','at'], ['type','type']],
+          suppliers: [['name','name']],
+          purchaseOrders: [['supplierId','supplierId'], ['status','status'], ['createdAt','createdAt']],
+          productionBatches: [['productName','productName'], ['at','at']],
+          stocktakes: [['status','status'], ['createdAt','createdAt']],
+          waste: [['inventoryId','inventoryId'], ['at','at']],
+          priceHistory: [['inventoryId','inventoryId'], ['at','at']],
+        };
+        for (const [store, indexes] of Object.entries(indexDefs)) {
+          const s = d.transaction.objectStore(store);
+          for (const [name, key] of indexes) if (!s.indexNames.contains(name)) s.createIndex(name, key);
         }
       } catch (e) { fail(e); }
     };
