@@ -7,7 +7,7 @@
    ========================================================================== */
 
 const DB_NAME = 'kucharzyna-db';
-const DB_VERSION = 1;
+const DB_VERSION = 5;
 const FALLBACK_CACHE = 'zarlok-storage-v1';
 const FALLBACK_PREFIX = 'zarlok-store:';
 const OPEN_TIMEOUT = 2500;
@@ -20,6 +20,20 @@ export const STORES = {
   shoppingItems: 'id',
   settings: 'key',
   history: 'id',
+  cookSessions: 'recipeId',
+  drafts: 'id',
+  inventory: 'id',
+  inventoryLog: 'id',
+  deliveries: 'id',
+  lots: 'id',
+  stockMovements: 'id',
+  suppliers: 'id',
+  purchaseOrders: 'id',
+  productionBatches: 'id',
+  stocktakes: 'id',
+  waste: 'id',
+  priceHistory: 'id',
+  cookHistory: 'id',
 };
 
 let backendPromise = null;
