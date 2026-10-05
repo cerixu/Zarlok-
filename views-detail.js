@@ -23,7 +23,8 @@ import { openRecipeAiSheet } from './views-ai.js';
 
 const KIND_LABEL = { flour: 'mąka', water: 'woda', salt: 'sól', yeast: 'drożdże', fat: 'tłuszcz', other: '' };
 
-export function detailView({ id }) {
+export function detailView({ id }, query) {
+  const expanded = !!(query && query.get('details') === '1');
   const base0 = getRecipe(id);
   if (!base0) {
     const s = screen({ title: 'Receptura', left: iconBtn('left', 'Wstecz', () => goBack('/recipes')) },
@@ -31,6 +32,7 @@ export function detailView({ id }) {
     return { el: s.el };
   }
   markOpened(id);
+  if (expanded) document.body.classList.add('no-tabs');
 
   let scaled = null;          // przeliczona kopia (niezapisana) albo null
   let scaleLabel = '';
@@ -385,13 +387,16 @@ export function detailView({ id }) {
           h('div', { class: 'ref-section-title' }, 'Składniki', h('span', null, r.servings ? 'na ' + fmtNum(r.servings, 1) + ' porcję' : '')),
           h('div', { class: 'ref-ingredient-row' },
             preview.map((ing) => h('div', { class: 'ref-ingredient-item' }, ingredientOrb(ing), h('span', null, ing.name))),
-            all.length > preview.length ? h('div', { class: 'ref-ingredient-more' }, '+' + (all.length - preview.length)) : null)),
-        h('button', { type: 'button', class: 'ref-show-more', onClick: () => detailsAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
-          h('span', null, 'Pokaż więcej szczegółów'), icon('down', 16)),
+            all.length > preview.length ? h('button', {
+              type: 'button',
+              class: 'ref-ingredient-more',
+              'aria-label': 'Otwórz pełną recepturę',
+              title: 'Otwórz pełną recepturę',
+              onClick: (e) => { e.preventDefault(); e.stopPropagation(); navigate('/recipe/' + encodeURIComponent(id) + '?details=1'); }
+            }, '+' + (all.length - preview.length)) : null)),
         h('div', { class: 'recipe-reference-primary' },
           button('GOTUJĘ', { kind: 'primary', lg: true, block: true, icon: 'chef', onClick: () => navigate('/guide/' + id) }))));
 
-    const detailsAnchor = h('div', { class: 'ref-details-anchor', id: 'recipe-details' });
     const details = h('div', { class: 'ref-details' },
       h('div', { class: 'ref-details-grid' },
         r.servings ? stat(fmtNum(r.servings, 1), 'porcje') : null,
@@ -420,16 +425,50 @@ export function detailView({ id }) {
         return h('section', { class: 'card' }, h('div', { class: 'row between' }, h('h2', { class: 'card-title' }, icon('edit', 20), 'Własne uwagi'), savedHint), notesEl);
       })());
 
-    s.content.replaceChildren(
-      h('div', { class: 'ref-detail-stage' }, card),
-      detailsAnchor,
-      details,
-      h('div', { class: 'meta-foot muted small' },
-        base().source ? h('div', null, 'Źródło: ', base().source) : null,
-        base().sourceUrl ? h('div', null, h('a', { class: 'ext', href: base().sourceUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 16), hostOf(base().sourceUrl) || base().sourceUrl)) : null,
-        h('div', null, 'Dodano ' + fmtDate(base().createdAt, true) + ' · zmieniono ' + fmtDateTime(base().updatedAt)),
-        !amateur() ? h('div', { class: 'row center' }, button('Historia zmian', { icon: 'history', kind: 'ghost', onClick: openHistory })) : null)
+    const fullHero = h('div', { class: 'recipe-full-hero' },
+      h('img', {
+        src: base().photo || base().thumb || recipeArtUrl(base()),
+        alt: base().photo ? 'Zdjęcie: ' + r.name : '',
+        loading: 'eager',
+        decoding: 'async'
+      }),
+      h('div', { class: 'recipe-full-hero-shade', 'aria-hidden': 'true' }),
+      h('div', { class: 'recipe-full-top' },
+        iconBtn('left', 'Wstecz', () => goBack('/recipe/' + encodeURIComponent(id)), 'ref-card-nav'),
+        h('div', { class: 'ref-card-nav-group' },
+          heartBtn(base()),
+          iconBtn('more', 'Więcej', () => openMore(), 'ref-card-nav'))),
+      h('div', { class: 'recipe-full-copy' },
+        h('div', { class: 'recipe-reference-kicker' },
+          h('span', null, catName(r.category)),
+          originOf(r.origin) ? h('span', { class: 'recipe-full-origin' }, originOf(r.origin).flag + ' ' + originOf(r.origin).name) : null,
+          r.traditional ? h('span', { class: 'ref-trad-dot' }, icon('star', 12)) : null),
+        h('h1', { class: 'recipe-full-title' }, r.name || 'Bez nazwy'),
+        h('div', { class: 'recipe-full-meta' },
+          r.rating ? h('span', { class: 'ref-rating' }, icon('star', 15), fmtNum(r.rating, 1)) : null,
+          r.servings ? h('span', null, fmtNum(r.servings, 1) + ' porcji') : null,
+          (r.prepTime || r.cookTime) ? h('span', null, fmtMinutes((r.prepTime || 0) + (r.cookTime || 0))) : null,
+          r.fermentTime ? h('span', null, 'ferm. ' + fmtMinutes(r.fermentTime)) : null)),
+      );
+    const sourceFoot = h('div', { class: 'meta-foot muted small' },
+      base().source ? h('div', null, 'Źródło: ', base().source) : null,
+      base().sourceUrl ? h('div', null, h('a', { class: 'ext', href: base().sourceUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 16), hostOf(base().sourceUrl) || base().sourceUrl)) : null,
+      h('div', null, 'Dodano ' + fmtDate(base().createdAt, true) + ' · zmieniono ' + fmtDateTime(base().updatedAt)),
+      !amateur() ? h('div', { class: 'row center' }, button('Historia zmian', { icon: 'history', kind: 'ghost', onClick: openHistory })) : null
     );
+
+    if (expanded) {
+      s.content.replaceChildren(
+        h('div', { class: 'recipe-fullscreen' },
+          fullHero,
+          details,
+          sourceFoot)
+      );
+    } else {
+      s.content.replaceChildren(
+        h('div', { class: 'ref-detail-stage' }, card)
+      );
+    }
   }
   paint();
   const unsub = subscribe((t) => {
@@ -439,5 +478,5 @@ export function detailView({ id }) {
       paint();
     }
   });
-  return { el: s.el, destroy: () => { unsub(); if (notesDirty && notesEl) notesSave.flush(notesEl.value); } };
+  return { el: s.el, destroy: () => { unsub(); if (notesDirty && notesEl) notesSave.flush(notesEl.value); if (expanded) document.body.classList.remove('no-tabs'); } };
 }
