@@ -6,15 +6,24 @@ on:
       - main
       - 'phase-*'
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  syntax:
+  qa:
+    name: Full QA (syntax + Chromium + iPhone Safari)
     runs-on: ubuntu-latest
+    timeout-minutes: 35
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Check JavaScript syntax
         shell: bash
         run: |
@@ -23,6 +32,7 @@ jobs:
             echo "Checking $f"
             node --check "$f"
           done
+
       - name: Cross-parser syntax check
         shell: bash
         run: |
@@ -44,6 +54,7 @@ jobs:
           }
           if (failed) process.exit(1);
           NODE
+
       - name: Check application version
         shell: bash
         run: |
@@ -55,24 +66,21 @@ jobs:
           test "$APP" = "$SW"
           echo "Version OK: $APP"
 
-  browser:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install Playwright
+      - name: Install Playwright Chromium + WebKit
+        shell: bash
         run: |
+          set -euo pipefail
           npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Browser startup smoke test
+          npx playwright install --with-deps chromium webkit
+
+      - name: Browser startup and functional smoke test
         shell: bash
         run: |
           set -euo pipefail
           python3 -m http.server 4173 >/tmp/zarlok-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({ headless: true });
@@ -122,7 +130,6 @@ jobs:
           if (libraryState.count < 1600) throw new Error('Recipe library is incomplete: ' + libraryState.count);
           if (!libraryState.title.includes('Żarłok')) throw new Error('Home view did not render after library load');
 
-          // iPhone/PWA smoke: viewport, manifest, safe-area meta and service worker registration.
           const pwaState = await page.evaluate(() => ({
             viewport: document.querySelector('meta[name="viewport"]')?.content || '',
             manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href') || '',
@@ -136,7 +143,6 @@ jobs:
           if (pwaState.appleStandalone.toLowerCase() !== 'yes') throw new Error('Apple standalone meta missing');
           if (!pwaState.serviceWorkerSupported) throw new Error('Service Worker API unavailable');
 
-          // Accessibility smoke: interactive controls need an accessible name.
           const unnamedControls = await page.evaluate(() => [...document.querySelectorAll('button,a,input,textarea,select')]
             .filter(el => {
               const hidden = el.getAttribute('aria-hidden') === 'true' || el.offsetParent === null;
@@ -149,7 +155,6 @@ jobs:
           console.log('A11Y_UNNAMED', JSON.stringify(unnamedControls));
           if (unnamedControls.length) throw new Error('Unnamed interactive controls found: ' + JSON.stringify(unnamedControls));
 
-          // Functional smoke: Magazyn
           await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
           await page.getByRole('button', { name: /Dodaj produkt/i }).first().click();
           await page.waitForTimeout(200);
@@ -162,7 +167,6 @@ jobs:
           await page.waitForTimeout(250);
           if (!(await page.getByText('QA Mąka 00').count())) throw new Error('Inventory item was not rendered after save');
 
-          // Functional smoke: scanner opens without crashing.
           await page.getByRole('button', { name: /Skanuj kod kreskowy/i }).first().click();
           await page.waitForTimeout(350);
           const scannerText = await page.locator('body').innerText();
@@ -170,54 +174,36 @@ jobs:
           const closeButtons = page.getByRole('button', { name: /Zamknij|Wróć|Anuluj/i });
           if (await closeButtons.count()) await closeButtons.first().click().catch(() => {});
 
-          // Functional smoke: inventory persistence + core PRO tabs.
           await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
           await page.waitForTimeout(250);
           if (!(await page.getByText('QA Mąka 00').count())) throw new Error('Inventory item disappeared after navigation');
           const inventoryBody = await page.locator('#view').innerText();
           if (!inventoryBody.includes('Magazyn')) throw new Error('Inventory screen lost its title');
 
-          await page.goto('http://127.0.0.1:4173/#/pro?tab=delivery', { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(300);
-          if (!(await page.locator('#view').innerText()).includes('Dostawy')) throw new Error('PRO delivery tab failed');
-          await page.goto('http://127.0.0.1:4173/#/pro?tab=orders', { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(300);
-          if (!(await page.locator('#view').innerText()).includes('Zamówienia')) throw new Error('PRO orders tab failed');
-          await page.goto('http://127.0.0.1:4173/#/pro?tab=analytics', { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(300);
-          if (!(await page.locator('#view').innerText()).includes('Analityka')) throw new Error('PRO analytics tab failed');
-          await page.goto('http://127.0.0.1:4173/#/pro?tab=automation', { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(300);
-          if (!(await page.locator('#view').innerText()).includes('Autopilot')) throw new Error('PRO automation tab failed');
-
-          // Functional smoke: history and PRO render after the new modules are loaded.
-          for (const [hash, expected] of [['#/history', 'Historia gotowania'], ['#/pro', 'Żarłok PRO']]) {
+          for (const [hash, expected] of [
+            ['#/pro?tab=delivery', 'Dostawy'],
+            ['#/pro?tab=orders', 'Zamówienia'],
+            ['#/pro?tab=analytics', 'Analityka'],
+            ['#/pro?tab=automation', 'Autopilot'],
+            ['#/history', 'Historia gotowania'],
+            ['#/pro', 'Żarłok PRO']
+          ]) {
             await page.goto('http://127.0.0.1:4173/' + hash, { waitUntil: 'networkidle', timeout: 30000 });
             await page.waitForTimeout(300);
             const body = await page.locator('#view').innerText();
-            if (!body.includes(expected)) throw new Error('Functional route failed: ' + hash);
+            if (!body.includes(expected)) throw new Error('Functional route failed for ' + hash);
           }
+
           await browser.close();
           NODE
-  iphone_safari:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install Playwright WebKit
-        run: |
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps webkit
-      - name: Check iPhone Safari QA script syntax
-        run: node --check qa-iphone-safari.mjs
-      - name: Run iPhone Safari QA
+
+      - name: iPhone Safari / WebKit QA
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 4173 >/tmp/zarlok-iphone-http.log 2>&1 &
+          node --check qa-iphone-safari.mjs
+          python3 -m http.server 4174 >/tmp/zarlok-iphone-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           sleep 1
-          ZARLOK_BASE_URL=http://127.0.0.1:4173/ node qa-iphone-safari.mjs
+          ZARLOK_BASE_URL=http://127.0.0.1:4174/ node qa-iphone-safari.mjs
