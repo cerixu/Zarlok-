@@ -122,6 +122,20 @@ jobs:
           if (libraryState.count < 1600) throw new Error('Recipe library is incomplete: ' + libraryState.count);
           if (!libraryState.title.includes('Żarłok')) throw new Error('Home view did not render after library load');
 
+          // iPhone/PWA smoke: viewport, manifest, safe-area meta and service worker registration.
+          const pwaState = await page.evaluate(() => ({
+            viewport: document.querySelector('meta[name="viewport"]')?.content || '',
+            manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href') || '',
+            appleStandalone: document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.content || '',
+            safeAreaCSS: getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || '',
+            serviceWorkerSupported: 'serviceWorker' in navigator
+          }));
+          console.log('PWA_CHECK', JSON.stringify(pwaState));
+          if (!pwaState.viewport.includes('viewport-fit=cover')) throw new Error('iPhone viewport-fit=cover missing');
+          if (!pwaState.manifest) throw new Error('PWA manifest link missing');
+          if (pwaState.appleStandalone.toLowerCase() !== 'yes') throw new Error('Apple standalone meta missing');
+          if (!pwaState.serviceWorkerSupported) throw new Error('Service Worker API unavailable');
+
           // Functional smoke: Magazyn
           await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
           await page.getByRole('button', { name: /Dodaj produkt/i }).first().click();
