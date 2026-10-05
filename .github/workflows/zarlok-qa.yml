@@ -70,6 +70,16 @@ jobs:
             'components.js','calculator.js','calc-kit.js','backup.js','importer.js','art.js','kitchen.js','search.js','views-tools.js'
           ];
           try {
+            const artSource2 = await page.evaluate(async () => fetch('./art.js?tagdiag=1').then(r => r.text()));
+            const tagErrors = [];
+            page.once('pageerror', e => tagErrors.push(e.message + '\\n' + (e.stack || '')));
+            await page.addScriptTag({ content: artSource2.replace(/export\\s+/g, '') + '\\n//# sourceURL=art-debug.js' });
+            if (tagErrors.length) errors.push('ART_TAG_FAIL: ' + tagErrors.join('\\n'));
+            else console.log('ART_TAG_PARSE_OK');
+          } catch (e) {
+            errors.push('ART_TAG_THROW: ' + e.message + '\\n' + (e.stack || ''));
+          }
+          try {
             const artSource = await page.evaluate(async () => fetch('./art.js?rawdiag=1').then(r => r.text()));
             await page.evaluate((src) => { new Function(src.replace(/export\s+/g, '')); }, artSource);
             console.log('ART_CLASSIC_PARSE_OK');
