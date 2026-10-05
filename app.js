@@ -20,6 +20,9 @@ import { importView } from './views-import.js';
 import { settingsView } from './views-settings.js';
 import { guideView } from './views-guide.js';
 import { searchView } from './views-search.js';
+import { inventoryView } from './views-inventory.js';
+import { historyView } from './views-history.js';
+import { proView } from './views-pro-fixed.js';
 
 const root = document.documentElement;
 
@@ -141,6 +144,9 @@ route('/import', (p, q) => importView(q), { tab: 'recipes' });
 route('/calc', () => calcView({}), { tab: 'calc' });
 route('/calc/:kind', (p, q) => calcView(p, q), { tab: 'calc' });
 route('/shopping', () => shoppingView(), { tab: 'shopping' });
+route('/inventory', () => inventoryView(), { tab: 'settings' });
+route('/history', () => historyView(), { tab: 'settings' });
+route('/pro', () => proView(), { tab: 'settings' });
 route('/settings', () => settingsView(), { tab: 'settings' });
 
 /* ---------- Start ---------- */
