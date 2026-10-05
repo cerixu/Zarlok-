@@ -8,7 +8,7 @@ import {
 } from './ui.js';
 import { navigate, goBack } from './router.js';
 import {
-  state, listRecipes, getRecipe, saveRecipe, blankRecipe, blankIngredient, blankSection, blankStep, kv, getSetting, allIngredients,
+  state, listRecipes, getRecipe, saveRecipe, blankRecipe, blankIngredient, blankSection, blankStep, getSetting, allIngredients,
 } from './recipes.js';
 import {
   pizzaCalc, yeastSuggestion, YEAST_TYPES, scaleRecipe, factorFromServings, factorFromYield, factorFromIngredient, effectiveYield, recipeCost, priceForFoodCost,
