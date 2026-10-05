@@ -3158,3 +3158,285 @@ body.kb-open .guidebar { padding-bottom: 10px; }
     padding-top: 26px;
   }
 }
+
+
+/* ==========================================================================
+   ŻARŁOK — FAZA 5 / CHEF MODE
+   ========================================================================== */
+
+.guide {
+  background: #1d1d1f;
+}
+
+.guide .scroll {
+  background:
+    radial-gradient(85% 42% at 50% 0%, rgba(255,184,78,.055), transparent 72%),
+    #1d1d1f;
+}
+
+.guide .content {
+  max-width: 520px;
+  padding: 10px 12px 20px;
+}
+
+.guide .topbar {
+  position: relative;
+  background: rgba(24,24,26,.70);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.guide .topbar .iconbtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.11);
+}
+
+.guide-progress {
+  gap: 5px;
+  padding: 7px 10px 8px;
+}
+
+.gseg {
+  height: 20px;
+}
+
+.gseg::before {
+  top: 8px;
+  height: 4px;
+  background: rgba(255,255,255,.10);
+}
+
+.gseg.done::before {
+  background: #ffb64d;
+}
+
+.gseg.now::before {
+  height: 6px;
+  top: 7px;
+  background: #f6f6f4;
+  box-shadow: 0 0 12px rgba(255,255,255,.15);
+}
+
+.guide-body {
+  min-height: 0;
+}
+
+.guide-card {
+  gap: 15px;
+  padding: 8px 0 14px;
+  min-height: 100%;
+}
+
+.guide-card > * {
+  width: 100%;
+}
+
+.guide-kicker {
+  color: #ffbd5b;
+  font-size: .68rem;
+  letter-spacing: .15em;
+}
+
+.guide-title {
+  font-size: clamp(1.65rem, 7vw, 2.2rem);
+  line-height: 1.03;
+  letter-spacing: -.04em;
+  font-weight: 820;
+}
+
+.guide-meta {
+  color: rgba(255,255,255,.47) !important;
+  font-size: .76rem;
+}
+
+.guide-text {
+  margin: 5px 0 3px;
+  padding: 19px 18px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 27px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+  box-shadow:
+    0 20px 45px rgba(0,0,0,.27),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  color: #f4f4f2;
+  font-size: clamp(1.28rem, 5.7vw, 1.7rem);
+  line-height: 1.25;
+  font-weight: 680;
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.guide-sub {
+  margin-top: 4px;
+  color: rgba(255,255,255,.43);
+  font-size: .66rem;
+  letter-spacing: .12em;
+}
+
+.guide-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px;
+}
+
+.gchip {
+  min-height: 68px;
+  padding: 8px 9px;
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 24px rgba(0,0,0,.18);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  backdrop-filter: blur(20px) saturate(1.3);
+  display: grid;
+  grid-template-columns: 46px minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.gchip-art {
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.10);
+  background: #252527;
+}
+
+.gchip-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gchip-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gchip-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255,255,255,.72);
+  font-size: .72rem;
+}
+
+.gchip-copy strong {
+  color: #f5f5f2;
+  font-size: .83rem;
+}
+
+.guide-timers {
+  gap: 9px;
+}
+
+.guide-timers .btn {
+  min-height: 58px;
+  border-radius: 19px;
+  justify-content: space-between;
+  background: rgba(255,255,255,.045);
+  border-color: rgba(255,255,255,.09);
+}
+
+.guide-timers .btn.primary {
+  background: linear-gradient(145deg, #ffc96c, #ffab3e);
+  color: #1d1307;
+  border-color: transparent;
+  box-shadow: 0 12px 30px rgba(255,171,61,.17), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.guidebar {
+  gap: 8px;
+  padding: 9px 12px max(10px, env(safe-area-inset-bottom, 0px));
+  background: rgba(21,21,23,.78);
+  border-top: 1px solid rgba(255,255,255,.08);
+  -webkit-backdrop-filter: blur(25px) saturate(1.5);
+  backdrop-filter: blur(25px) saturate(1.5);
+}
+
+.guidebar .btn {
+  min-height: 54px;
+  border-radius: 18px;
+}
+
+.guidebar .guide-next {
+  flex: 1.35 1 0;
+}
+
+.guidebar .guide-back {
+  flex: .65 1 0;
+}
+
+.guide .stepper {
+  margin: 6px 0 2px;
+  padding: 10px 7px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 26px;
+  background: rgba(255,255,255,.038);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.guide .stepper-val strong {
+  color: #f5f5f2;
+}
+
+.guide .cook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.guide .cook-row {
+  min-height: 63px;
+  padding: 8px 11px;
+  border-radius: 19px;
+  background: rgba(255,255,255,.042);
+  border: 1px solid rgba(255,255,255,.075);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.guide .cook-row.on {
+  background: rgba(255,180,74,.10);
+  border-color: rgba(255,180,74,.20);
+}
+
+.guide .cbox {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.035);
+}
+
+.guide .cook-row.on .cbox {
+  background: #ffb64d;
+  color: #211406;
+  border-color: transparent;
+}
+
+.guide-done {
+  font-size: 4.2rem;
+  filter: drop-shadow(0 10px 24px rgba(255,176,65,.16));
+}
+
+.guide .stars {
+  gap: 2px;
+}
+
+.guide .star {
+  color: rgba(255,255,255,.25);
+}
+
+.guide .star.on {
+  color: #ffbe56;
+}
+
