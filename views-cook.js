@@ -14,6 +14,7 @@ import { scaleRecipe, factorFromServings } from './calculator.js';
 import { qtyParts } from './components.js';
 import { fmtNum, debounce, parseNum } from './util.js';
 import { startTimer, openTimersSheet } from './timers.js';
+import { openRecipeAiSheet } from './views-ai.js';
 
 /* ---------- Widok ---------- */
 
@@ -194,6 +195,7 @@ export function cookView({ id }) {
     const sh = openSheet({
       title: 'Gotuję', variant: 'sheet',
       body: h('div', { class: 'menu' },
+        button('Zapytaj Żarłoka AI', { icon: 'sparkle', block: true, onClick: () => { sh.close(); const currentStep = base().steps.find(st => !prog.steps[st.id])?.text || ''; openRecipeAiSheet({ openSheet, recipe: base(), currentStep }); } }),
         button('Wyczyść zaznaczenia', { icon: 'refresh', block: true, onClick: async () => { sh.close(); prog.ing = {}; prog.steps = {}; saveProg(); paint(); toast('Wyczyszczono postęp'); } }),
         button('Edytuj recepturę', { icon: 'edit', block: true, onClick: () => { sh.close(); navigate('/edit/' + id); } }),
         button('Wróć do receptury', { icon: 'left', block: true, onClick: () => { sh.close(); goBack('/recipe/' + id); } })),
