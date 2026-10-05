@@ -12,8 +12,9 @@ const PALETTES = [
 const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return Math.abs(h); };
 
 const shadow = (cx = 100, cy = 150, rx = 70, ry = 9) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#2a1a08" opacity=".14"/>`;
-const plate = (r = 72) => `<ellipse cx="100" cy="${100 + r * 0.12}" rx="${r}" ry="${r * 0.96}" fill="#2a1a08" opacity=".13"/>
-  <circle cx="100" cy="100" r="${r}" fill="#fff"/><circle cx="100" cy="100" r="${r * 0.83}" fill="#f6f1e9" stroke="#e8dfd0" stroke-width="2"/>`;
+const plate = (r = 72) => `<ellipse cx="100" cy="${100 + r * 0.12}" rx="${r}" ry="${r * 0.96}" fill="#000" opacity=".48"/>
+  <circle cx="100" cy="100" r="${r}" fill="#1d1d20" stroke="#69696c" stroke-width="2"/>
+  <circle cx="100" cy="100" r="${r * 0.87}" fill="#101012" stroke="#8a8a8d" stroke-opacity=".18" stroke-width="2"/>`;
 const leaf = (x, y, a = 0, s = 1, c = '#3f9d4e') => `<g transform="translate(${x} ${y}) rotate(${a}) scale(${s})"><path d="M0 0 C6 -10 18 -10 24 0 C18 10 6 10 0 0Z" fill="${c}"/><path d="M2 0 H22" stroke="#fff" stroke-opacity=".45" stroke-width="1.4"/></g>`;
 const dots = (pts, r, c, o = 1) => pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="${o}"/>`).join('');
 
@@ -144,15 +145,89 @@ export const ART_KINDS = Object.keys(MOTIFS);
 
 const cache = new Map();
 
+const INGREDIENT_KINDS = {
+  meat: (g) => `<ellipse cx="50" cy="77" rx="30" ry="6" fill="#000" opacity=".35"/><path d="M20 40c8-18 43-24 57-8 11 13 1 34-15 39-18 6-48-5-44-31Z" fill="url(#g)"/><path d="M25 50c12-8 24 8 38-7M31 63c9-10 18 2 29-7" fill="none" stroke="#7a2f22" stroke-width="3" opacity=".65"/>`,
+  potato: (g) => `<ellipse cx="50" cy="78" rx="31" ry="6" fill="#000" opacity=".35"/>${[[28,45,17,-12],[53,37,18,9],[72,55,16,15],[42,62,17,-8]].map(([x,y,rx,a]) => \`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="13" fill="url(#g)" transform="rotate(${a} ${x} ${y})"/>`).join('')}`,
+  asparagus: () => `<ellipse cx="50" cy="79" rx="30" ry="5" fill="#000" opacity=".35"/>${[24,34,44,54,64,74].map((x,i)=>\`<g transform="rotate(${i%2?7:-6} ${x} 50)"><rect x="${x-3}" y="28" width="6" height="48" rx="3" fill="#6fae45"/><path d="M${x-3} 34l6-7" stroke="#a7d06d" stroke-width="2"/></g>\`).join('')}`,
+  tomato: () => `<ellipse cx="50" cy="78" rx="28" ry="6" fill="#000" opacity=".35"/><path d="M23 49c0-18 12-29 27-29s27 11 27 29c0 17-11 29-27 29S23 66 23 49Z" fill="url(#g)"/><path d="m50 27-10-8 4 13-14-3 12 10M50 27l10-8-4 13 14-3-12 10" fill="#5d8c38"/>`,
+  carrot: () => `<ellipse cx="50" cy="79" rx="28" ry="5" fill="#000" opacity=".3"/><path d="M39 25c-9-7-4-13 3-8 3-9 9-8 8 2 7-6 12-1 7 7" fill="none" stroke="#6fa249" stroke-width="4" stroke-linecap="round"/><path d="M36 30c12-4 24 1 25 10 1 12-8 28-13 39-3 5-8 5-11 0-6-12-14-28-12-39 1-6 5-9 11-10Z" fill="url(#g)"/>`,
+  onion: () => `<ellipse cx="50" cy="79" rx="29" ry="6" fill="#000" opacity=".3"/><path d="M50 23c-14 6-23 17-22 33 1 16 9 26 22 26s21-10 22-26c1-16-8-27-22-33Z" fill="url(#g)"/><path d="M50 25c-3 16-4 38 0 56M37 33c2 15 5 28 10 43M63 33c-2 15-5 28-10 43" fill="none" stroke="#8f5e2f" stroke-width="2.5" opacity=".6"/><path d="M48 24c0-6 3-10 7-13 3 5 0 10-6 14Z" fill="#6d4a28"/>`,
+  garlic: () => `<ellipse cx="50" cy="79" rx="30" ry="6" fill="#000" opacity=".3"/><path d="M50 24c-15 1-25 13-23 29 2 15 14 26 24 26s22-11 24-26c2-16-8-28-25-29Z" fill="url(#g)"/><path d="M50 25c-2 15-3 37 1 54M38 31c6 13 8 31 7 44M62 31c-6 13-8 31-7 44" fill="none" stroke="#b4a789" stroke-width="2.6"/><path d="M49 25c-1-6 2-10 6-13 3 5 1 10-5 14Z" fill="#6b4d2e"/>`,
+  herb: () => `<path d="M50 82C50 58 48 43 39 25" stroke="#5e943f" stroke-width="4" fill="none" stroke-linecap="round"/>${[[44,44,-35],[35,35,25],[49,55,30],[57,47,-28],[48,67,-34],[61,62,31]].map(([x,y,a])=>\`<g transform="translate(${x} ${y}) rotate(${a})"><path d="M0 0C8-9 18-8 22 0C15 8 7 9 0 0Z" fill="#74aa46"/><path d="M2 0h17" stroke="#c2dc91" stroke-width="1.5"/></g>\`).join('')}`,
+  oil: () => `<ellipse cx="50" cy="81" rx="23" ry="5" fill="#000" opacity=".35"/><path d="M35 26h30l-3 49c-1 8-23 8-24 0Z" fill="url(#g)"/><path d="M41 26V18h18v8" fill="#7a6843"/><rect x="43" y="12" width="14" height="8" rx="2" fill="#c6b38a"/><path d="M42 33c10 4 15 8 21 3" fill="none" stroke="#fff8b0" stroke-width="3" opacity=".45"/>`,
+  salt: () => `<ellipse cx="50" cy="81" rx="28" ry="5" fill="#000" opacity=".35"/><path d="M30 52c0-10 9-17 20-17s20 7 20 17c0 15-6 25-20 25S30 67 30 52Z" fill="#f2efe6"/><path d="M35 39h30v-5H35Z" fill="#cbc7bc"/>${[[40,46],[49,43],[58,47],[44,55],[54,58],[61,53],[36,61]].map(([x,y])=>\`<circle cx="${x}" cy="${y}" r="1.8" fill="#b4b0a4"/>`).join('')}`,
+  pepper: () => `<ellipse cx="50" cy="82" rx="28" ry="5" fill="#000" opacity=".35"/><path d="M32 42c-4 13 7 26 17 34 8-6 18-17 18-29 0-11-11-18-22-18-7 0-11 4-13 13Z" fill="url(#g)"/><circle cx="43" cy="48" r="2.2" fill="#fff" opacity=".2"/><circle cx="53" cy="56" r="2.2" fill="#fff" opacity=".15"/><circle cx="59" cy="47" r="2" fill="#fff" opacity=".2"/>`,
+  egg: () => `<ellipse cx="50" cy="80" rx="30" ry="5" fill="#000" opacity=".35"/><path d="M50 24c-13 0-24 15-24 31 0 16 10 25 24 25s24-9 24-25c0-16-11-31-24-31Z" fill="#f6f1df"/><circle cx="50" cy="54" r="13" fill="url(#g)"/>`,
+  lemon: () => `<ellipse cx="50" cy="81" rx="27" ry="5" fill="#000" opacity=".35"/><path d="M27 49c3-13 14-21 27-18 12-3 23 5 20 18-3 14-16 26-29 26S24 63 27 49Z" fill="url(#g)"/><path d="M50 31c-1-6 2-10 7-12 2 5-1 9-6 12Z" fill="#5d8738"/>`,
+  mushroom: () => `<ellipse cx="50" cy="82" rx="29" ry="5" fill="#000" opacity=".35"/><path d="M21 51c2-16 13-25 29-25s27 9 29 25Z" fill="url(#g)"/><path d="M38 50v21c0 11 24 11 24 0V50Z" fill="#d5b78e"/><path d="M28 51c9 4 16 5 22 5 8 0 15-2 22-5" stroke="#9c704d" stroke-width="2" fill="none" opacity=".55"/>`,
+  chili: () => `<path d="M23 69c20 4 42 1 56-12 6-5 12-4 14 0 2 6-6 11-12 14-20 10-41 9-58 0Z" fill="url(#g)"/><path d="M78 56c5-6 5-11 2-16" stroke="#5b883b" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+  flour: () => `<ellipse cx="50" cy="82" rx="28" ry="5" fill="#000" opacity=".35"/><path d="M25 55c3-18 13-28 25-28s22 10 25 28l-5 23H30Z" fill="url(#g)"/><path d="M31 54c10-7 28-7 38 0" stroke="#cbc5b8" stroke-width="3" fill="none" opacity=".6"/>`,
+  butter: () => `<ellipse cx="50" cy="81" rx="28" ry="5" fill="#000" opacity=".35"/><rect x="24" y="35" width="52" height="34" rx="6" fill="url(#g)"/><path d="M29 41h42M29 48h42" stroke="#fff0a0" stroke-width="2" opacity=".4"/>`,
+  cheese: () => `<ellipse cx="50" cy="82" rx="28" ry="5" fill="#000" opacity=".35"/><path d="M23 68 38 29l39 13-13 40Z" fill="url(#g)"/><path d="m38 29 39 13-22 9-32-8Z" fill="#f0d77a"/><circle cx="49" cy="40" r="3" fill="#9f7a29"/><circle cx="61" cy="57" r="3" fill="#9f7a29"/>`,
+};
+
+const ingredientAliases = [
+  [/pol[eę]dwica|wołowina|wołow(e|y|a)|stek|mi[eę]so/i, 'meat'],
+  [/ziemniak/i, 'potato'],
+  [/szparag/i, 'asparagus'],
+  [/pomidor/i, 'tomato'],
+  [/marchew/i, 'carrot'],
+  [/cebula/i, 'onion'],
+  [/czosnek/i, 'garlic'],
+  [/rozmaryn|tymianek|bazylia|rukola|natka|lubczyk/i, 'herb'],
+  [/oliw[aą]|olej/i, 'oil'],
+  [/s[oó]l/i, 'salt'],
+  [/pieprz/i, 'pepper'],
+  [/jajk/i, 'egg'],
+  [/cytryn/i, 'lemon'],
+  [/grzyb|pieczark/i, 'mushroom'],
+  [/chili|papryczk/i, 'chili'],
+  [/m[aą]k/i, 'flour'],
+  [/mas[łl]o/i, 'butter'],
+  [/parmesan|parmigiano|pecorino|grana|grana padano|ser/i, 'cheese'],
+];
+
+const ingredientGradients = {
+  meat: ['#c9543a','#6d251e'], potato: ['#f2bd55','#ad6b2e'], asparagus: ['#8dc85a','#3b7d38'],
+  tomato: ['#ef5a3e','#b62826'], carrot: ['#ff9a37','#c85b1b'], onion: ['#e0a34a','#855024'],
+  garlic: ['#f2ead8','#bcae8b'], herb: ['#8bc55b','#2e6f39'], oil: ['#f8d65a','#9b7a19'],
+  salt: ['#fbfaf5','#c9c5ba'], pepper: ['#574f48','#1c1b1b'], egg: ['#f5d35b','#e58e21'],
+  lemon: ['#f4d93c','#b59a20'], mushroom: ['#c89a73','#79513f'], chili: ['#ee4940','#991d25'],
+  flour: ['#f3eee1','#c7bfad'], butter: ['#f9d65c','#c69a25'], cheese: ['#f2d67a','#b58428'],
+};
+
+export function ingredientArtSvg(name = '') {
+  const n = String(name).toLocaleLowerCase('pl-PL').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const alias = ingredientAliases.find(([re]) => re.test(n));
+  const kind = alias ? alias[1] : 'cheese';
+  const [a, b] = ingredientGradients[kind] || ingredientGradients.cheese;
+  const body = INGREDIENT_KINDS[kind] ? INGREDIENT_KINDS[kind]() : INGREDIENT_KINDS.cheese();
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+    ${body}
+  </svg>`;
+}
+
+const ingredientCache = new Map();
+export function ingredientArtUrl(name = '') {
+  const key = String(name).trim().toLocaleLowerCase('pl-PL');
+  let u = ingredientCache.get(key);
+  if (!u) {
+    u = 'data:image/svg+xml;utf8,' + encodeURIComponent(ingredientArtSvg(name));
+    ingredientCache.set(key, u);
+  }
+  return u;
+}
+
 export function artSvg(kind, seedText = '') {
   const k = MOTIFS[kind] ? kind : 'plate';
   const [c1, c2] = PALETTES[hash(seedText || k) % PALETTES.length];
   const h = hash(seedText + k);
   const b1 = 20 + (h % 120), b2 = 30 + ((h >> 3) % 110);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1a1c"/><stop offset="1" stop-color="#3a3028"/></linearGradient></defs>
 <rect width="200" height="200" fill="url(#g)"/>
-<circle cx="${b1}" cy="${(b2 % 60) + 14}" r="${34 + (h % 22)}" fill="#fff" opacity=".22"/><circle cx="${200 - b2 / 2}" cy="${150 + (b1 % 40)}" r="${28 + (h % 30)}" fill="#fff" opacity=".16"/>
+<circle cx="${b1}" cy="${(b2 % 60) + 14}" r="${34 + (h % 22)}" fill="#fff" opacity=".035"/><circle cx="${200 - b2 / 2}" cy="${150 + (b1 % 40)}" r="${28 + (h % 30)}" fill="#ffb44a" opacity=".045"/>
 ${MOTIFS[k]()}
 </svg>`;
 }
