@@ -2565,3 +2565,263 @@ body.kb-open .guidebar { padding-bottom: 10px; }
 .recipe-reference-content {
   padding-top: 13px;
 }
+
+
+/* ==========================================================================
+   ŻARŁOK 1.7 — FINAL REFERENCE TUNING
+   Reference first: graphite card, restrained orange, deep background,
+   layered cards. No full-screen hero treatment.
+   ========================================================================== */
+
+:root {
+  --ref-bg: #202022;
+  --ref-card: #4b4b4e;
+  --ref-card-2: #404043;
+  --ref-text: #f3f3f1;
+  --ref-soft: rgba(243,243,241,.62);
+  --ref-line: rgba(255,255,255,.12);
+  --ref-orange: #ffb64d;
+  --ref-orange-hi: #ffc86d;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="auto"] body {
+  background: var(--ref-bg);
+}
+
+:root[data-theme="dark"] .recipes,
+:root[data-theme="auto"] .recipes {
+  background: var(--ref-bg);
+}
+
+.recipes .scroll {
+  padding-top: calc(var(--top-h, 64px) + 8px);
+}
+
+.recipes .content {
+  padding-left: 12px;
+  padding-right: 12px;
+  max-width: 520px;
+}
+
+.recipes .counter {
+  display: none;
+}
+
+.recipes .group-title {
+  margin: 18px 8px 9px;
+  color: rgba(255,255,255,.46);
+}
+
+.recipes .list {
+  gap: 0;
+}
+
+.ref-recipe-card {
+  width: min(100%, 354px);
+  margin: 0 auto 20px;
+  border-radius: 29px;
+  background: linear-gradient(145deg, #555558, #3f3f42);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 22px 46px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.09);
+}
+
+.ref-recipe-card::before {
+  inset: 7px -9px -7px 9px;
+  border-radius: 27px;
+  background: #3b3b3e;
+  opacity: .95;
+  transform: rotate(1.8deg);
+}
+
+.ref-recipe-card::after {
+  inset: 14px -15px -13px 16px;
+  border-radius: 26px;
+  background: #343437;
+  opacity: .70;
+  transform: rotate(4deg);
+}
+
+.ref-recipe-card .rcard-main {
+  border-radius: inherit;
+}
+
+.ref-card-photo {
+  width: calc(100% - 26px);
+  margin-top: 13px;
+  aspect-ratio: 1.32 / 1;
+  border-radius: 22px;
+  box-shadow: 0 14px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.ref-card-body {
+  padding: 14px 17px 15px;
+}
+
+.ref-card-category {
+  opacity: .76;
+}
+
+.ref-card-title {
+  font-size: 1.30rem;
+  line-height: 1.08;
+  max-width: 18ch;
+}
+
+.ref-card-metrics {
+  margin-top: 9px;
+  gap: 8px 15px;
+}
+
+.ref-card-ingredients {
+  gap: 7px;
+  margin-top: 12px;
+  max-width: 290px;
+}
+
+.ref-mini-ingredient {
+  color: rgba(255,255,255,.62);
+  background: rgba(255,255,255,.045);
+  border-color: rgba(255,255,255,.07);
+  padding: 6px 8px;
+  font-size: .65rem;
+}
+
+.ref-card-footer {
+  margin-top: 13px;
+  padding-top: 11px;
+}
+
+.ref-card-footer > span:first-child {
+  color: rgba(255,255,255,.62);
+}
+
+.ref-card-footer .heart {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+}
+
+.recipes .list > .ref-recipe-card:nth-child(1) { z-index: 3; }
+.recipes .list > .ref-recipe-card:nth-child(2) {
+  z-index: 2;
+  transform: translateX(-9px) rotate(-1.2deg);
+}
+.recipes .list > .ref-recipe-card:nth-child(3) {
+  z-index: 1;
+  transform: translateX(9px) rotate(1.6deg);
+}
+.recipes .list > .ref-recipe-card:nth-child(n + 4) {
+  transform: none;
+}
+
+.recipe-reference-card {
+  width: min(100%, 354px);
+  min-height: 0;
+  border-radius: 29px;
+  background: linear-gradient(145deg, #555558, #3f3f42);
+  box-shadow: 0 24px 58px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.09);
+}
+
+.recipe-reference-photo {
+  width: calc(100% - 26px);
+  height: 235px;
+  margin-top: 13px;
+  border-radius: 22px;
+}
+
+.recipe-reference-content {
+  padding: 13px 17px 16px;
+}
+
+.recipe-reference-top {
+  top: 11px;
+  left: 17px;
+  right: 17px;
+}
+
+.recipe-reference-kicker {
+  color: rgba(255,255,255,.49);
+  font-size: .69rem;
+}
+
+.recipe-reference-title {
+  font-size: clamp(1.66rem, 7vw, 2.04rem);
+  line-height: 1.03;
+}
+
+.recipe-reference-meta {
+  margin-top: 9px;
+  gap: 7px 12px;
+}
+
+.recipe-reference-desc {
+  margin-top: 9px;
+  color: rgba(255,255,255,.54);
+}
+
+.ref-section-title {
+  font-size: .95rem;
+}
+
+.ref-ingredient-row {
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ref-ingredient-item {
+  flex-basis: 58px;
+}
+
+.ref-ingredient-orb,
+.ref-ingredient-more {
+  width: 48px;
+  height: 48px;
+}
+
+.ref-ingredient-item > span {
+  width: 58px;
+}
+
+.ref-show-more {
+  min-height: 38px;
+  margin-top: 10px;
+  font-size: .70rem;
+}
+
+.recipe-reference-primary {
+  margin-top: 8px;
+}
+
+.recipe-reference-primary .btn {
+  min-height: 47px;
+  border-radius: 17px;
+  font-size: .80rem;
+}
+
+.detail .scroll {
+  background: var(--ref-bg);
+}
+
+.ref-detail-stage {
+  min-height: auto;
+  padding: 9px 7px 20px;
+  background: var(--ref-bg);
+}
+
+.ref-details {
+  background: var(--ref-bg);
+}
+
+@media (max-width: 380px) {
+  .ref-recipe-card {
+    width: min(100%, 340px);
+  }
+  .recipe-reference-card {
+    width: min(100%, 340px);
+  }
+  .recipe-reference-photo {
+    height: 215px;
+  }
+}
+
