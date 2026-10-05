@@ -149,7 +149,7 @@ async function main() {
   if (firstRecipeHref) {
     await page.goto(BASE_URL + firstRecipeHref.replace(/^#/, ''), { waitUntil: 'networkidle', timeout: 30000 });
     await sleep(250);
-    if (await page.locator('.recipe-fullscreen').count()) throw new Error('Recipe opened in full details too early');
+    if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Recipe did not open in fullscreen');
     const plus = page.locator('.ref-ingredient-more').first();
     if (await plus.count()) {
       await plus.click();
@@ -263,7 +263,7 @@ async function main() {
   });
   console.log('SW_CHECK', JSON.stringify(swState));
   if (!swState.controlled) throw new Error('Page is not controlled by Service Worker');
-  if (swState.version !== 'zarlok-2.2.1') throw new Error('Unexpected Service Worker version: ' + swState.version);
+  if (swState.version !== 'zarlok-2.2.2') throw new Error('Unexpected Service Worker version: ' + swState.version);
 
   // Offline reload: cached app must still boot and render the home route.
   errors.length = 0;
