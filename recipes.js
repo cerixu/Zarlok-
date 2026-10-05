@@ -8,6 +8,15 @@
 import { db, kv } from './db.js';
 import { uid, norm, fmtAmount, fmtMinutes, fmtDateTime, flagEmoji } from './util.js';
 import { SEED_TEXT, parseSeeds } from './seeds.js';
+const ARCHIVE_MODULE_VERSION = '20261005-zarlok-1';
+const ARCHIVE_TRANSLATION_VERSION = 34;
+let archiveLibraryPromise = null;
+async function getRecipeLibrary() {
+  if (!archiveLibraryPromise) archiveLibraryPromise = import(`./recipe-library.js?v=${ARCHIVE_MODULE_VERSION}`);
+  const mod = await archiveLibraryPromise;
+  return mod.recipeLibrary;
+}
+
 import { recipeLibrary } from './recipe-library.js';
 
 /* ---------- Kategorie i kraje ---------- */
@@ -90,7 +99,7 @@ export function blankRecipe(over = {}) {
   const now = Date.now();
   return {
     id: uid('rcp_'), schema: 1, name: '', category: 'cat-inne', description: '', photo: '', thumb: '',
-    servings: 4, yieldAmount: null, yieldUnit: 'g', prepTime: 0, cookTime: 0, fermentTime: 0, temperature: '',
+    servings: 1, yieldAmount: null, yieldUnit: 'g', prepTime: 0, cookTime: 0, fermentTime: 0, temperature: '',
     bakers: false, sections: [blankSection('')], steps: [], notes: '', tags: [], favorite: false, favoritedAt: 0,
     source: '', sourceUrl: '', traditional: false, origin: '', salePrice: null,
     createdAt: now, updatedAt: now, lastOpenedAt: 0, openCount: 0, ...over,
@@ -144,12 +153,14 @@ export async function loadAll() {
   if (!cats.length) { await db.putMany('categories', DEFAULT_CATEGORIES); state.categories = [...DEFAULT_CATEGORIES]; }
   else state.categories = cats.sort((a, b) => a.order - b.order);
   if (!getSetting('seeded')) {
-    if (!state.recipes.size) await restoreSeeds();
+    if (!state.recipes.size) await restoreSeeds({ includeArchive: false });
     await setSetting('seeded', true);
   } else {
     await addNewSeeds();
   }
   state.ready = true;
+  // Pełna biblioteka Kucharka jest ciężka, dlatego nigdy nie blokuje pierwszego renderu.
+  setTimeout(() => ensureArchiveLibrary().catch((e) => console.warn('[Żarłok] Biblioteka receptur:', e)), 250);
 }
 
 /* ---------- Kategorie ---------- */
@@ -452,7 +463,7 @@ function handSeeds() {
 /** Dodaje przykładowe receptury, jeśli ich brakuje (nie nadpisuje edytowanych). */
   // Biblioteka archiwalna jest traktowana jak dane startowe. ID są stabilne,
   // więc użytkownik nie dostaje duplikatów ani ponownego przywracania usuniętych rekordów.
-export async function restoreSeeds() {
+export async function restoreSeeds({ includeArchive = false } = {}) {
   const all = seedRecipes();
   const seeds = all.filter((r) => !state.recipes.has(r.id));
   if (seeds.length) {
@@ -460,14 +471,31 @@ export async function restoreSeeds() {
     seeds.forEach((r) => state.recipes.set(r.id, r));
   }
   await setSetting('seedsAdded', all.map((r) => r.id));
-  if (seeds.length) emit('recipes');
-  return seeds.length;
+  let archiveCount = 0;
+  if (includeArchive) archiveCount = await ensureArchiveLibrary();
+  if (seeds.length || archiveCount) emit('recipes');
+  return seeds.length + archiveCount;
 }
 
-/** Po aktualizacji aplikacji dokłada TYLKO nowe przykłady (usunięte przez użytkownika nie wracają). */
+async function ensureArchiveLibrary() {
+  if (getSetting('archiveSeeded') === true) return 0;
+  const recipeLibrary = await getRecipeLibrary();
+  const library = recipeLibrary(Date.now());
+  const missing = library.filter((r) => !state.recipes.has(r.id));
+  if (missing.length) {
+    await db.putMany('recipes', missing);
+    missing.forEach((r) => state.recipes.set(r.id, normalizeRecipe(r)));
+  }
+  await setSetting('archiveSeeded', true);
+  await setSetting('archiveTranslationVersion', ARCHIVE_TRANSLATION_VERSION);
+  if (missing.length) emit('recipes');
+  return missing.length;
+}
+
+/** Po aktualizacji aplikacji dokłada TYLKO nowe przykłady; usunięte przez użytkownika nie wracają. */
 async function addNewSeeds() {
   let added = getSetting('seedsAdded');
-  if (!Array.isArray(added)) added = [...LEGACY_SEED_IDS];       // wersja 1.0 miała tylko te trzy
+  if (!Array.isArray(added)) added = [...LEGACY_SEED_IDS];
   const have = new Set(added);
   const all = seedRecipes();
   const fresh = all.filter((r) => !have.has(r.id) && !state.recipes.has(r.id));
