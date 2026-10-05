@@ -49,6 +49,8 @@ export const DEFAULT_SETTINGS = {
   proxyUrl: '',
   mmEmail: '',            // opcjonalny e-mail dla MyMemory (większy dzienny limit tłumaczeń)
   autoTranslate: true,
+  inventoryAutoConsumption: true,
+  inventoryAutoShopping: true,
 };
 
 /* ---------- Stan (lustro bazy) ---------- */
