@@ -143,6 +143,26 @@ jobs:
           const closeButtons = page.getByRole('button', { name: /Zamknij|Wróć|Anuluj/i });
           if (await closeButtons.count()) await closeButtons.first().click().catch(() => {});
 
+          // Functional smoke: inventory persistence + core PRO tabs.
+          await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(250);
+          if (!(await page.getByText('QA Mąka 00').count())) throw new Error('Inventory item disappeared after navigation');
+          const inventoryBody = await page.locator('#view').innerText();
+          if (!inventoryBody.includes('Magazyn')) throw new Error('Inventory screen lost its title');
+
+          await page.goto('http://127.0.0.1:4173/#/pro?tab=delivery', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(300);
+          if (!(await page.locator('#view').innerText()).includes('Dostawy')) throw new Error('PRO delivery tab failed');
+          await page.goto('http://127.0.0.1:4173/#/pro?tab=orders', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(300);
+          if (!(await page.locator('#view').innerText()).includes('Zamówienia')) throw new Error('PRO orders tab failed');
+          await page.goto('http://127.0.0.1:4173/#/pro?tab=analytics', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(300);
+          if (!(await page.locator('#view').innerText()).includes('Analityka')) throw new Error('PRO analytics tab failed');
+          await page.goto('http://127.0.0.1:4173/#/pro?tab=automation', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(300);
+          if (!(await page.locator('#view').innerText()).includes('Autopilot')) throw new Error('PRO automation tab failed');
+
           // Functional smoke: history and PRO render after the new modules are loaded.
           for (const [hash, expected] of [['#/history', 'Historia gotowania'], ['#/pro', 'Żarłok PRO']]) {
             await page.goto('http://127.0.0.1:4173/' + hash, { waitUntil: 'networkidle', timeout: 30000 });
