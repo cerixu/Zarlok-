@@ -19,6 +19,7 @@ import { heartBtn, tradMark, qtyParts, recipeToText, originOf } from './componen
 import { openAddToShopping } from './shopping.js';
 import { hostOf } from './importer.js';
 import { recipeArtUrl, ingredientArtUrl } from './art.js';
+import { openRecipeAiSheet } from './views-ai.js';
 
 const KIND_LABEL = { flour: 'mąka', water: 'woda', salt: 'sól', yeast: 'drożdże', fat: 'tłuszcz', other: '' };
 
@@ -290,6 +291,7 @@ export function detailView({ id }) {
     const sh = openSheet({
       title: r.name || 'Receptura', variant: 'sheet',
       body: h('div', { class: 'menu' },
+        button('Zapytaj Żarłoka AI', { icon: 'sparkle', block: true, onClick: () => { sh.close(); openRecipeAiSheet({ openSheet, recipe: r }); } }),
         button('Edytuj recepturę', { icon: 'edit', block: true, onClick: () => { sh.close(); navigate('/edit/' + id); } }),
         button('Duplikuj', { icon: 'copy', block: true, onClick: async () => { sh.close(); const c = await duplicateRecipe(id); toast('Utworzono kopię', { action: { label: 'Otwórz', fn: () => navigate('/recipe/' + c.id) } }); } }),
         button('Skopiuj jako tekst', { icon: 'copy', block: true, onClick: async () => { sh.close(); const ok = await copyText(recipeToText(cur())); toast(ok ? 'Skopiowano recepturę' : 'Nie udało się skopiować', { type: ok ? '' : 'error' }); } }),
