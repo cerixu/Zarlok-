@@ -326,4 +326,26 @@ export const chip = (label, { on = false, onClick, cls = '', aria } = {}) =>
 
 /* ---------- Skróty ---------- */
 export const scrollTop = (el) => { if (el) el.scrollTop = 0; };
+
+export function focusPreservingPaint(fn, root = document) {
+  const active = document.activeElement;
+  const isField = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
+  if (!isField) return fn();
+  const key = active.getAttribute('aria-label') || active.id || active.name || active.placeholder || '';
+  const tag = active.tagName;
+  const start = typeof active.selectionStart === 'number' ? active.selectionStart : null;
+  const end = typeof active.selectionEnd === 'number' ? active.selectionEnd : null;
+  const value = active.value;
+  const result = fn();
+  const restore = () => {
+    if (document.contains(active)) return;
+    const candidates = [...root.querySelectorAll('input,textarea,select')];
+    const next = candidates.find((el) => el.tagName === tag && key && (el.getAttribute('aria-label') === key || el.id === key || el.getAttribute('name') === key || el.getAttribute('placeholder') === key));
+    if (!next) return;
+    if ('value' in next && next.value !== value) next.value = value;
+    try { next.focus({ preventScroll: true }); if (start != null && typeof next.setSelectionRange === 'function') { const max = next.value.length; next.setSelectionRange(Math.min(start, max), Math.min(end ?? start, max)); } } catch (_) {}
+  };
+  queueMicrotask(restore); requestAnimationFrame(restore); return result;
+}
+
 export function focusLater(el) { setTimeout(() => { try { el.focus(); } catch (_) { /* */ } }, 30); }
