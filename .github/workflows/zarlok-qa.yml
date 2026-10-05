@@ -71,8 +71,15 @@ jobs:
           page.on('pageerror', err => errors.push('pageerror: ' + err.message + '\n' + (err.stack || '')));
           page.on('requestfailed', req => errors.push('requestfailed: ' + req.url() + ' :: ' + (req.failure()?.errorText || 'unknown')));
           const debugPage = await browser.newPage();
-          debugPage.on('pageerror', err => errors.push('DETAIL_DEBUG_PAGEERROR: ' + err.message + '\\n' + (err.stack || '')));
+          await debugPage.evaluate(() => {
+            window.__detailDebugErrors = [];
+            window.addEventListener('error', e => window.__detailDebugErrors.push({
+              message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
+            }), true);
+          });
           await debugPage.goto('http://127.0.0.1:4173/debug-detail.html', { waitUntil: 'load', timeout: 30000 });
+          const detailDebugErrors = await debugPage.evaluate(() => window.__detailDebugErrors || []);
+          if (detailDebugErrors.length) errors.push('DETAIL_DEBUG_WINDOW: ' + JSON.stringify(detailDebugErrors));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 30000 });
           const modules = [
             'db.js','recipes.js','ui.js','router.js','pwa.js','timers.js',
