@@ -7,7 +7,8 @@
    ========================================================================== */
 import { h, icon, screen, button, iconBtn, toast, openSheet, emptyState, textArea } from './ui.js';
 import { navigate, goBack } from './router.js';
-import { getRecipe, kv, patchRecipe, getSetting, setSetting, allIngredients } from './recipes.js';
+import { getRecipe, patchRecipe, getSetting, setSetting, allIngredients } from './recipes.js';
+import { kv } from './db.js';
 import { scaleRecipe } from './calculator.js';
 import { qtyParts } from './components.js';
 import { ingredientArtUrl } from './art.js';
