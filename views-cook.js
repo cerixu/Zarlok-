@@ -7,6 +7,9 @@ import { h, icon, screen, button, iconBtn, toast, openSheet, confirmDialog, numI
 import { navigate, goBack } from './router.js';
 import { getRecipe, patchRecipe, getSetting } from './recipes.js';
 import { kv } from './db.js';
+import { recordCook } from './history.js';
+import { consumeRecipeIngredients } from './inventory.js';
+import { addItems } from './shopping.js';
 import { scaleRecipe, factorFromServings } from './calculator.js';
 import { qtyParts } from './components.js';
 import { fmtNum, debounce, parseNum } from './util.js';
@@ -39,7 +42,7 @@ export function cookView({ id }) {
     return { el: s.el };
   }
 
-  let prog = { ing: {}, steps: {}, factor: 1, tab: 'ing', ts: 1.15 };
+  let prog = { ing: {}, steps: {}, factor: 1, tab: 'ing', ts: 1.15, inventoryConsumedAt: 0, inventoryConsumptionId: '', cookHistoryId: '' };
   let loaded = false;
   const base = () => getRecipe(id) || r0;
   const view = () => scaleRecipe(base(), prog.factor || 1);
@@ -204,7 +207,82 @@ export function cookView({ id }) {
       const ok = await confirmDialog({ title: 'Zakończyć gotowanie?', message: 'Nie wszystko jest odhaczone. Postęp zostanie zapamiętany, więc możesz wrócić do tego miejsca.', confirmText: 'Zakończ' });
       if (!ok) return;
     }
-    if (all) { prog.ing = {}; prog.steps = {}; prog.tab = 'ing'; saveProg.flush(); toast('Smacznego! 👨‍🍳'); }
+
+    if (all && !prog.inventoryConsumedAt) {
+      const autoConsumption = getSetting('inventoryAutoConsumption') !== false;
+      const useStock = autoConsumption ? true : await confirmDialog({
+        title: 'Odjąć składniki z magazynu?',
+        message: 'Aplikacja odejmie od Magazynu ilości użyte w tej recepturze.',
+        confirmText: 'Odjąć',
+      });
+
+      if (useStock) {
+        const sourceId = prog.inventoryConsumptionId || `cook:${id}:${Date.now()}`;
+        prog.inventoryConsumptionId = sourceId;
+        try {
+          const result = await consumeRecipeIngredients(base(), prog.factor || 1, { sourceId });
+
+          if (result.shortages.length) {
+            const autoShopping = getSetting('inventoryAutoShopping') !== false;
+            if (autoShopping) {
+              await addItems(result.shortages.map((x) => ({
+                name: x.name, amount: x.missing, unit: x.unit, recipeId: id, recipeName: r0.name
+              })));
+              toast('Magazyn zaktualizowany · braki dodane do zakupów 📦');
+            } else {
+              toast('Magazyn zaktualizowany · występują braki 📦', { type: 'error' });
+            }
+          } else {
+            toast('Zużycie zapisane w magazynie 📦');
+          }
+
+          prog.inventoryConsumedAt = Date.now();
+        } catch (e) {
+          console.error(e);
+          toast(e?.message || 'Nie udało się zaktualizować magazynu.', { type: 'error' });
+          saveProg.flush();
+          return;
+        }
+      }
+    }
+
+    if (all) {
+      const cookedAt = Date.now();
+      const cookEventId = prog.cookHistoryId || `cook:${id}:${cookedAt}`;
+      prog.cookHistoryId = cookEventId;
+      const cookedRecipe = base();
+      const cookedFactor = Number(prog.factor || 1);
+      const cookedServings = Number(view().servings || cookedRecipe.servings || 1);
+
+      try {
+        await recordCook({
+          id: cookEventId,
+          recipeId: id,
+          recipeName: cookedRecipe.name,
+          at: cookedAt,
+          factor: cookedFactor,
+          servings: cookedServings,
+          inventoryConsumed: !!prog.inventoryConsumedAt,
+        });
+        await patchRecipe(id, {
+          lastCookedAt: cookedAt,
+          cookCount: Number(cookedRecipe.cookCount || 0) + 1,
+        }, { touch: true });
+      } catch (e) {
+        console.error(e);
+        toast('Gotowanie zakończone, ale nie udało się zapisać historii.', { type: 'error' });
+      }
+
+      prog.ing = {};
+      prog.steps = {};
+      prog.tab = 'ing';
+      prog.inventoryConsumedAt = 0;
+      prog.inventoryConsumptionId = '';
+      prog.cookHistoryId = '';
+      saveProg.flush();
+      toast('Smacznego! 👨‍🍳');
+    }
+
     goBack('/recipe/' + id);
   }
 
@@ -224,7 +302,7 @@ export function cookView({ id }) {
   paint();
   kv.get('cook:' + id).then((p) => {
     if (p && typeof p === 'object') {
-      prog = { ing: {}, steps: {}, factor: 1, tab: 'ing', ts: 1.15, ...p };
+      prog = { ing: {}, steps: {}, factor: 1, tab: 'ing', ts: 1.15, inventoryConsumedAt: 0, inventoryConsumptionId: '', cookHistoryId: '', ...p };
       s.el.style.setProperty('--cook-ts', String(prog.ts));
       const c = counts();
       if (p.tab === undefined && c.ni && c.di === c.ni) prog.tab = 'steps';
