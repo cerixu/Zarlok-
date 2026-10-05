@@ -12,6 +12,7 @@ import { parseRecipeText, looksLikeUrl, hostOf } from './importer.js';
 import { qtyParts } from './components.js';
 import { fmtMinutes } from './util.js';
 import { translateRecipe, detectLang } from './search.js';
+import { importRecipeFromUrl, hasAIAccess } from './ai.js';
 
 export function importView(query) {
   let parsed = null;
@@ -48,6 +49,16 @@ export function importView(query) {
   }
   const fileIn = h('input', { type: 'file', accept: '.txt,.html,.htm,.md,.json,text/*', class: 'sr-file', 'aria-label': 'Wczytaj plik z przepisem' });
   fileIn.addEventListener('change', () => { loadFile(fileIn.files && fileIn.files[0]); fileIn.value = ''; });
+
+  async function recognizeFromUrl() {
+    const url=urlIn.value.trim();
+    if(!url){toast('Wklej adres strony z przepisem',{type:'error'});urlIn.focus();return;}
+    if(!/^https:\/\//i.test(url)){toast('Importer AI przyjmuje tylko HTTPS',{type:'error'});return;}
+    if(!navigator.onLine){toast('Import z URL wymaga internetu',{type:'error'});return;}
+    if(!hasAIAccess()){toast('Najpierw skonfiguruj Żarłok AI w Ustawieniach',{type:'error',ms:5000});return;}
+    try{parsed={recipe:await importRecipeFromUrl(url),issues:[],stats:{ingredients:0,steps:0}};parsed.stats.ingredients=parsed.recipe.sections.reduce((n,s)=>n+s.ingredients.length,0);parsed.stats.steps=parsed.recipe.steps.length;paintPreview();toast('AI zaimportowało recepturę');}
+    catch(e){toast(e.message||'Nie udało się zaimportować strony',{type:'error',ms:5000});}
+  }
 
   function recognize() {
     const text = textIn.value;
@@ -124,6 +135,7 @@ export function importView(query) {
       h('h2', { class: 'card-title' }, icon('upload', 20), 'Wklej przepis'),
       fileIn, textIn,
       field('Adres strony (źródło)', urlIn),
+      button('Importuj stronę przez Żarłok AI', { icon: 'sparkle', block: true, onClick: recognizeFromUrl }),
       h('div', { class: 'row wrap gap' },
         button('Wklej ze schowka', { icon: 'copy', onClick: pasteFromClipboard }),
         button('Wczytaj plik', { icon: 'upload', kind: 'ghost', onClick: () => fileIn.click() })),
