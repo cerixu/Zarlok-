@@ -85,6 +85,22 @@ jobs:
             errors.push('ART_WINDOW_THROW: ' + e.message + '\\n' + (e.stack || ''));
           }
           try {
+            const detailSource = await page.evaluate(async () => fetch('./views-detail.js?detaildiag=1').then(r => r.text()));
+            await page.evaluate(() => {
+              window.__detailDiagErrors = [];
+              window.addEventListener('error', e => window.__detailDiagErrors.push({
+                message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno
+              }), true);
+            });
+            const strippedDetail = detailSource.replace(/^import[\\s\\S]*?;\\n/gm, '').replaceAll('export ', '');
+            await page.addScriptTag({ content: strippedDetail + '\\n//# sourceURL=views-detail-debug.js' });
+            const detailDiag = await page.evaluate(() => window.__detailDiagErrors || []);
+            if (detailDiag.length) errors.push('DETAIL_WINDOW_FAIL: ' + JSON.stringify(detailDiag));
+            else console.log('DETAIL_WINDOW_PARSE_OK');
+          } catch (e) {
+            errors.push('DETAIL_WINDOW_THROW: ' + e.message + '\\n' + (e.stack || ''));
+          }
+          try {
             const artSource = await page.evaluate(async () => fetch('./art.js?rawdiag=1').then(r => r.text()));
             await page.evaluate((src) => { new Function(src.replace(/export\s+/g, '')); }, artSource);
             console.log('ART_CLASSIC_PARSE_OK');
