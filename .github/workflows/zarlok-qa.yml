@@ -121,5 +121,34 @@ jobs:
           console.log('LIBRARY_CHECK', JSON.stringify(libraryState));
           if (libraryState.count < 1600) throw new Error('Recipe library is incomplete: ' + libraryState.count);
           if (!libraryState.title.includes('Żarłok')) throw new Error('Home view did not render after library load');
+
+          // Functional smoke: Magazyn
+          await page.goto('http://127.0.0.1:4173/#/inventory', { waitUntil: 'networkidle', timeout: 30000 });
+          await page.getByRole('button', { name: /Dodaj produkt/i }).first().click();
+          await page.waitForTimeout(200);
+          if (!(await page.getByText('Nowy produkt').count())) throw new Error('Inventory editor did not open');
+          const nameField = page.getByLabel('Nazwa produktu');
+          await nameField.fill('QA Mąka 00');
+          const qtyField = page.getByLabel('Ilość');
+          await qtyField.fill('5');
+          await page.getByRole('button', { name: /^Zapisz$/ }).click();
+          await page.waitForTimeout(250);
+          if (!(await page.getByText('QA Mąka 00').count())) throw new Error('Inventory item was not rendered after save');
+
+          // Functional smoke: scanner opens without crashing.
+          await page.getByRole('button', { name: /Skanuj kod kreskowy/i }).first().click();
+          await page.waitForTimeout(350);
+          const scannerText = await page.locator('body').innerText();
+          if (!scannerText.includes('Skanuj') && !scannerText.includes('kod')) throw new Error('Barcode scanner UI did not open');
+          const closeButtons = page.getByRole('button', { name: /Zamknij|Wróć|Anuluj/i });
+          if (await closeButtons.count()) await closeButtons.first().click().catch(() => {});
+
+          // Functional smoke: history and PRO render after the new modules are loaded.
+          for (const [hash, expected] of [['#/history', 'Historia gotowania'], ['#/pro', 'Żarłok PRO']]) {
+            await page.goto('http://127.0.0.1:4173/' + hash, { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(300);
+            const body = await page.locator('#view').innerText();
+            if (!body.includes(expected)) throw new Error('Functional route failed: ' + hash);
+          }
           await browser.close();
           NODE
