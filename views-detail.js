@@ -405,7 +405,7 @@ export function detailView({ id }) {
         h('div', { class: 'row wrap gap' },
           button('Zapisz jako nową', { sm: true, onClick: saveScaledNew }),
           button('Zapisz w tej', { sm: true, onClick: saveScaledHere }),
-          button('Reset', { sm: true, kind: 'ghost', onClick: () => { scaled = null; scaleLabel = ''; paint(); } })) : null,
+          button('Reset', { sm: true, kind: 'ghost', onClick: () => { scaled = null; scaleLabel = ''; paint(); } }))) : null,
       ingredientsCard(r, table),
       bakersCard(r, table),
       h('section', { class: 'card' },
