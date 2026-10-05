@@ -214,16 +214,18 @@ async function main() {
   if (swState.version !== 'zarlok-2.1.6') throw new Error('Unexpected Service Worker version: ' + swState.version);
 
   // Offline reload: cached app must still boot and render the home route.
+  errors.length = 0;
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
   await waitForReady(page);
   const offlineState = await getState(page);
   console.log('OFFLINE_CHECK', JSON.stringify(offlineState));
   if (!offlineState.routeText.includes('Żarłok')) throw new Error('Offline reload did not render Żarłok');
-  if (!offlineState.bodyClass.includes('')) {} // keep the state observable in logs
   await context.setOffline(false);
 
-  if (errors.length) throw new Error('WebKit runtime errors: ' + JSON.stringify(errors));
+  if (errors.some((e) => e.startsWith('console:') || e.startsWith('pageerror:'))) {
+    throw new Error('WebKit runtime errors: ' + JSON.stringify(errors));
+  }
   console.log('IPHONE_SAFARI_QA_OK');
   await browser.close();
 }
