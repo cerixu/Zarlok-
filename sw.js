@@ -20,6 +20,9 @@ const CORE = [
   'app.js', 'router.js', 'pwa.js', 'ui.js', 'util.js', 'db.js', 'recipes.js', 'calculator.js', 'importer.js', 'backup.js',
   'components.js', 'shopping.js', 'art.js', 'seeds.js', 'timers.js', 'kitchen.js', 'tools-data.js', 'calc-kit.js', 'search.js',
   'views-start.js', 'views-recipes.js', 'views-detail.js', 'views-editor.js', 'views-cook.js', 'views-calc.js', 'views-tools.js', 'views-guide.js', 'views-search.js', 'views-import.js', 'views-settings.js',
+  'views-inventory.js', 'views-history.js', 'views-pro-fixed.js', 'views-ai.js',
+  'inventory.js', 'history.js', 'pro.js', 'pro-calculators.js', 'barcode-scanner.js', 'barcode-decoder.js', 'ai.js', 'recipe-library.js', 'recipe-translation.js',
+  'recipe-library-data/index.js', 'recipe-library-data/part-01.js', 'recipe-library-data/part-02.js', 'recipe-library-data/part-03.js', 'recipe-library-data/part-04.js', 'recipe-library-data/part-05.js', 'recipe-library-data/part-06.js', 'recipe-library-data/part-07.js', 'recipe-library-data/part-08.js', 'recipe-library-data/part-09.js',
   'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
 ];
 
