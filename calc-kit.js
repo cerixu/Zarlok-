@@ -3,7 +3,7 @@
    ========================================================================== */
 import { h, screen, iconBtn } from './ui.js';
 import { goBack } from './router.js';
-import { kv } from './recipes.js';
+import { kv } from './db.js';
 import { debounce } from './util.js';
 
 export const calcScreen = (title, ...content) => screen({ title, left: iconBtn('left', 'Kalkulatory', () => goBack('/calc')), cls: 'calc' }, ...content);
