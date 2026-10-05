@@ -139,6 +139,25 @@ export function pizzaCalc({ balls, ballWeight, hydration, salt, oil, yeast }) {
  * Orientacyjna ilość drożdży świeżych (% mąki) dla temperatury i czasu fermentacji.
  * Model: ilość ~ 1 / (czas × 2^((T−20)/10)); 24 h w 20 °C ≈ 0,25%.
  */
+/** Kalkulator ciasta od posiadanej ilości mąki. Mąka = 100%. */
+export function pizzaCalcFromFlour({ flour, ballWeight, hydration, salt, oil, yeast }) {
+  const flourG = Number(flour);
+  const pctSum = 100 + Number(hydration || 0) + Number(salt || 0) + Number(oil || 0) + Number(yeast || 0);
+  const part = (p) => (flourG * Number(p || 0)) / 100;
+  const total = flourG * pctSum / 100;
+  return {
+    flour: flourG,
+    water: part(hydration),
+    salt: part(salt),
+    oil: part(oil),
+    yeast: part(yeast),
+    total,
+    pctSum,
+    balls: Number(ballWeight) > 0 ? Math.floor(total / Number(ballWeight)) : null,
+    remainder: Number(ballWeight) > 0 ? total % Number(ballWeight) : null,
+  };
+}
+
 export function yeastSuggestion(tempC, hours) {
   if (!(hours > 0) || !Number.isFinite(tempC)) return null;
   return clamp(6 / (hours * Math.pow(2, (tempC - 20) / 10)), 0.02, 3);
