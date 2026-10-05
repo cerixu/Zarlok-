@@ -9,7 +9,7 @@ const n=(v)=>Number(v||0);
 const money=(v)=>n(v).toLocaleString('pl-PL',{maximumFractionDigits:2});
 
 export function proView(){
- const s=screen({title:'Kucharek PRO',right:iconBtn('refresh','Odśwież',()=>render())});
+ const s=screen({title:'Żarłok PRO',right:iconBtn('refresh','Odśwież',()=>render())});
  let tab=new URLSearchParams(location.hash.split('?')[1]||'').get('tab')||'dashboard',unsub;
  const nav=(id,label)=>button(label,{sm:true,kind:tab===id?'primary':'ghost',onClick:()=>{tab=id;render();}});
  async function render(){
