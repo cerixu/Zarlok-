@@ -434,13 +434,14 @@ export function detailView({ id }, query) {
       })());
 
     const fullHero = h('div', { class: 'recipe-full-hero' },
-      h('img', {
-        src: base().photo || base().thumb || recipeArtUrl(base()),
-        alt: base().photo ? 'Zdjęcie: ' + r.name : '',
-        loading: 'eager',
-        decoding: 'async'
-      }),
-      h('div', { class: 'recipe-full-hero-shade', 'aria-hidden': 'true' }),
+      h('div', { class: 'recipe-full-photo' },
+        h('img', {
+          src: base().photo || base().thumb || recipeArtUrl(base()),
+          alt: base().photo ? 'Zdjęcie: ' + r.name : '',
+          loading: 'eager',
+          decoding: 'async'
+        }),
+        h('div', { class: 'recipe-full-photo-shade', 'aria-hidden': 'true' })),
       h('div', { class: 'recipe-full-top' },
         iconBtn('left', 'Wstecz', () => leaveRecipe('/recipes'), 'ref-card-nav'),
         h('div', { class: 'ref-card-nav-group' },
@@ -454,10 +455,24 @@ export function detailView({ id }, query) {
         h('h1', { class: 'recipe-full-title' }, r.name || 'Bez nazwy'),
         h('div', { class: 'recipe-full-meta' },
           r.rating ? h('span', { class: 'ref-rating' }, icon('star', 15), fmtNum(r.rating, 1)) : null,
-          r.servings ? h('span', null, fmtNum(r.servings, 1) + ' porcji') : null,
+          r.servings ? h('span', null, fmtNum(r.servings, 1) + ' porcje') : null,
           (r.prepTime || r.cookTime) ? h('span', null, fmtMinutes((r.prepTime || 0) + (r.cookTime || 0))) : null,
-          r.fermentTime ? h('span', null, 'ferm. ' + fmtMinutes(r.fermentTime)) : null)),
-      );
+          r.fermentTime ? h('span', null, 'ferm. ' + fmtMinutes(r.fermentTime)) : null),
+        r.description ? h('p', { class: 'recipe-full-desc' }, r.description) : null,
+        h('div', { class: 'recipe-full-ingredients' },
+          h('div', { class: 'ref-section-title' }, 'Składniki', h('span', null, r.servings ? 'na ' + fmtNum(r.servings, 1) + ' porcję' : '')),
+          h('div', { class: 'ref-ingredient-row' },
+            preview.map((ing) => h('div', { class: 'ref-ingredient-item' }, ingredientOrb(ing), h('span', null, ing.name))),
+            all.length > preview.length ? h('button', {
+              type: 'button',
+              class: 'ref-ingredient-more',
+              'aria-label': 'Pokaż wszystkie składniki i kroki',
+              title: 'Pokaż wszystkie składniki i kroki',
+              onClick: (e) => { e.preventDefault(); e.stopPropagation(); document.querySelector('.ref-details-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+            }, '+' + (all.length - preview.length)) : null)),
+        h('div', { class: 'recipe-full-primary' },
+          button('GOTUJĘ', { kind: 'primary', lg: true, block: true, icon: 'chef', onClick: () => navigate('/guide/' + id) })))
+    );
     const sourceFoot = h('div', { class: 'meta-foot muted small' },
       base().source ? h('div', null, 'Źródło: ', base().source) : null,
       base().sourceUrl ? h('div', null, h('a', { class: 'ext', href: base().sourceUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 16), hostOf(base().sourceUrl) || base().sourceUrl)) : null,
