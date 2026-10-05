@@ -133,6 +133,41 @@ async function main() {
     await assertAccessibleControls(page, hash);
   }
 
+  // Receptury UX: catalog is intentionally capped, cards show category/origin, and full details open separately.
+  await page.goto(BASE_URL + '#/recipes', { waitUntil: 'networkidle', timeout: 30000 });
+  await sleep(250);
+  const catalogState = await page.evaluate(() => ({
+    cards: document.querySelectorAll('.recipe-catalog-card').length,
+    sources: document.querySelectorAll('.recipe-catalog-card .catalog-origin').length,
+    categories: document.querySelectorAll('.recipe-catalog-card .catalog-category').length,
+  }));
+  console.log('RECIPE_CATALOG_CHECK', JSON.stringify(catalogState));
+  if (catalogState.cards > 30) throw new Error('Recipe catalog rendered more than 30 cards at once');
+  if (catalogState.cards > 0 && (!catalogState.categories || !catalogState.sources)) throw new Error('Recipe cards lost category/origin labels');
+
+  const firstRecipeHref = await page.locator('.recipe-catalog-card .rcard-main').first().getAttribute('href');
+  if (firstRecipeHref) {
+    await page.goto(BASE_URL + firstRecipeHref.replace(/^#/, ''), { waitUntil: 'networkidle', timeout: 30000 });
+    await sleep(250);
+    if (await page.locator('.recipe-fullscreen').count()) throw new Error('Recipe opened in full details too early');
+    const plus = page.locator('.ref-ingredient-more').first();
+    if (await plus.count()) {
+      await plus.click();
+      await sleep(250);
+      if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Ingredient +N did not open full recipe');
+      if (!document.body.classList.contains('no-tabs')) throw new Error('Full recipe did not use fullscreen mode');
+      if (!(await page.locator('.ref-details .ingredients').count())) throw new Error('Full recipe is missing ingredients');
+      if (!(await page.getByText('Przygotowanie', { exact: true }).count())) throw new Error('Full recipe is missing preparation section');
+    } else {
+      const idFromHref = firstRecipeHref.match(/recipe\/([^?]+)/)?.[1];
+      if (idFromHref) {
+        await page.goto(BASE_URL + '#/recipe/' + idFromHref + '?details=1', { waitUntil: 'networkidle', timeout: 30000 });
+        await sleep(250);
+        if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Direct full recipe route did not open fullscreen');
+      }
+    }
+  }
+
   // Vertical scrolling regression: the app shell must scroll inside .scroll on iPhone.
   await page.goto(BASE_URL + '#/recipes', { waitUntil: 'networkidle', timeout: 30000 });
   await sleep(250);
@@ -227,7 +262,7 @@ async function main() {
   });
   console.log('SW_CHECK', JSON.stringify(swState));
   if (!swState.controlled) throw new Error('Page is not controlled by Service Worker');
-  if (swState.version !== 'zarlok-2.1.7') throw new Error('Unexpected Service Worker version: ' + swState.version);
+  if (swState.version !== 'zarlok-2.2.0') throw new Error('Unexpected Service Worker version: ' + swState.version);
 
   // Offline reload: cached app must still boot and render the home route.
   errors.length = 0;
