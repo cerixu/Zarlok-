@@ -63,19 +63,10 @@ export function recipeTile(r) {
 /** Karta receptury (lista, ekran startowy). */
 export function recipeCard(r, { onFav } = {}) {
   const activeTime = (r.prepTime || 0) + (r.cookTime || 0);
-  const ingredients = (r.sections || []).flatMap((s) => s.ingredients || [])
-    .filter((i) => i.name).slice(0, 4);
-
-  const ingredientOrb = (ing) => {
-    const src = ing.photo || ing.image || ingredientArtUrl(ing.name);
-    return h('span', {
-      class: 'ref-ingredient-orb',
-      title: ing.name,
-      'aria-label': ing.name
-    }, src
-      ? h('img', { src, alt: '', loading: 'lazy', decoding: 'async' })
-      : h('span', { class: 'ref-ingredient-fallback' }, String(ing.name).trim().slice(0, 2).toUpperCase()));
-  };
+  const ingredients = (r.sections || []).flatMap((s) => s.ingredients || []).filter((i) => i.name);
+  const preview = ingredients.slice(0, 3);
+  const origin = originOf(r.origin);
+  const category = catName(r.category);
 
   return h('article', { class: 'rcard ref-recipe-card' },
     h('div', { class: 'ref-card-surface' },
@@ -94,24 +85,26 @@ export function recipeCard(r, { onFav } = {}) {
           }),
           h('div', { class: 'ref-card-photo-shade', 'aria-hidden': 'true' })),
         h('div', { class: 'ref-card-body' },
+          h('div', { class: 'ref-card-topline' },
+            h('span', { class: 'ref-card-category' }, category || 'Inne'),
+            origin ? h('span', { class: 'ref-card-origin' }, origin.flag, ' ', origin.name) : null,
+            r.traditional ? h('span', { class: 'ref-card-trad', title: 'Tradycyjna receptura' }, icon('star', 13)) : null),
           h('div', { class: 'ref-card-header' },
             h('div', { class: 'ref-card-copy' },
               h('h3', { class: 'ref-card-title' }, r.name || 'Bez nazwy'),
               r.description ? h('p', { class: 'ref-card-description' }, r.description) : null),
-            h('div', { class: 'ref-card-rating' },
-              h('span', null, fmtNum(r.rating || 4.8, 1)),
-              icon('star', 13))),
-          h('div', { class: 'ref-card-kcal' },
-            r.calories ? fmtNum(r.calories, 0) + 'kcal' : activeTime ? fmtMinutes(activeTime) : ''),
-          h('div', { class: 'ref-card-ingredients-title' }, 'ingredients'),
-          ingredients.length ? h('div', { class: 'ref-card-ingredients' },
-            ingredients.map((i) => ingredientOrb(i))) : null,
+            r.rating ? h('div', { class: 'ref-card-rating' }, h('span', null, fmtNum(r.rating, 1)), icon('star', 13)) : null),
+          h('div', { class: 'ref-card-metrics' },
+            activeTime ? h('span', null, icon('clock', 14), fmtMinutes(activeTime)) : null,
+            r.servings ? h('span', null, icon('user', 14), fmtNum(r.servings, 1) + ' porcji') : null,
+            r.calories ? h('span', null, fmtNum(r.calories, 0) + ' kcal') : null),
+          preview.length ? h('div', { class: 'ref-card-ingredients' },
+            preview.map((i) => h('span', { class: 'ref-mini-ingredient' }, i.name)),
+            ingredients.length > preview.length ? h('span', { class: 'ref-mini-ingredient ref-mini-more' }, '+' + (ingredients.length - preview.length)) : null) : null,
           h('div', { class: 'ref-card-footer' },
-            h('span', null, 'Show more details'),
-            icon('down', 15))),
+            h('span', null, 'Otwórz recepturę', icon('right', 14))),
       ),
-      h('div', { class: 'ref-card-actions' },
-        heartBtn(r, onFav))));
+      h('div', { class: 'ref-card-actions' }, heartBtn(r, onFav))));
 }
 export function sectionHead(title, { action, onAction, count } = {}) {
   return h('div', { class: 'sechead' },
