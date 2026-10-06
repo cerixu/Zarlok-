@@ -24,7 +24,7 @@ import { openRecipeAiSheet } from './views-ai.js';
 const KIND_LABEL = { flour: 'mąka', water: 'woda', salt: 'sól', yeast: 'drożdże', fat: 'tłuszcz', other: '' };
 
 export function detailView({ id }, query) {
-  const expanded = true;
+  const expanded = !!(query && query.get('details') === '1');
   let leaving = false;
   const leaveRecipe = (fallback = '/recipes') => {
     if (leaving) return;
