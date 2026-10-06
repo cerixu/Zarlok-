@@ -169,6 +169,18 @@ async function main() {
     }
   }
 
+  // +N opens details in a separate fullscreen window, not inline.
+  const plusButton = page.locator('.ref-ingredient-more').first();
+  if (await plusButton.count()) {
+    await plusButton.click();
+    await sleep(200);
+    if (!(await page.locator('.recipe-detail-window').count())) throw new Error('Recipe details window did not open');
+    if (!(await page.locator('.recipe-detail-window').getByText('Przygotowanie', { exact: true }).count())) throw new Error('Recipe details window missing preparation section');
+    await page.getByRole('button', { name: 'Zamknij szczegóły' }).click();
+    await sleep(150);
+    if (await page.locator('.recipe-detail-window').count()) throw new Error('Recipe details window did not close');
+  }
+
   // Vertical scrolling regression: the app shell must scroll inside .scroll on iPhone.
   await page.goto(BASE_URL + '#/recipes', { waitUntil: 'networkidle', timeout: 30000 });
   await sleep(250);
@@ -263,7 +275,7 @@ async function main() {
   });
   console.log('SW_CHECK', JSON.stringify(swState));
   if (!swState.controlled) throw new Error('Page is not controlled by Service Worker');
-  if (swState.version !== 'zarlok-2.2.3') throw new Error('Unexpected Service Worker version: ' + swState.version);
+  if (swState.version !== 'zarlok-2.2.4') throw new Error('Unexpected Service Worker version: ' + swState.version);
 
   // Offline reload: cached app must still boot and render the home route.
   errors.length = 0;
