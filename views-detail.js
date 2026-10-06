@@ -40,7 +40,11 @@ export function detailView({ id }, query) {
     return { el: s.el };
   }
   markOpened(id);
-  if (expanded) document.body.classList.add('no-tabs');
+  const setDetailsOpen = (open) => {
+    detailsOpen = open;
+    document.body.classList.toggle('no-tabs', open);
+    paint();
+  };
 
   let scaled = null;          // przeliczona kopia (niezapisana) albo null
   let scaleLabel = '';
@@ -400,7 +404,7 @@ export function detailView({ id }, query) {
               class: 'ref-ingredient-more',
               'aria-label': 'Otwórz pełną recepturę',
               title: 'Otwórz pełną recepturę',
-              onClick: (e) => { e.preventDefault(); e.stopPropagation(); navigate('/recipe/' + encodeURIComponent(id) + '?details=1'); }
+              onClick: (e) => { e.preventDefault(); e.stopPropagation(); setDetailsOpen(true); }
             }, '+' + (all.length - preview.length)) : null)),
         h('div', { class: 'recipe-reference-primary' },
           button('GOTUJĘ', { kind: 'primary', lg: true, block: true, icon: 'chef', onClick: () => navigate('/guide/' + id) }))));
@@ -481,20 +485,20 @@ export function detailView({ id }, query) {
       !amateur() ? h('div', { class: 'row center' }, button('Historia zmian', { icon: 'history', kind: 'ghost', onClick: openHistory })) : null
     );
 
-    if (expanded) {
-      s.content.replaceChildren(
-        h('div', { class: 'recipe-fullscreen' },
-          fullHero,
-          detailsAnchor,
-          details,
-          sourceFoot)
-      );
-    } else {
-      s.content.replaceChildren(
-        h('div', { class: 'ref-detail-stage' }, card)
-      );
-    }
-  }
+    const detailOverlay = detailsOpen ? h('div', { class: 'recipe-detail-window' },
+      h('div', { class: 'recipe-detail-window-head' },
+        iconBtn('x', 'Zamknij szczegóły', () => setDetailsOpen(false), 'ref-card-nav'),
+        h('div', { class: 'recipe-detail-window-title' }, r.name || 'Receptura'),
+        h('div', { class: 'recipe-detail-window-spacer', 'aria-hidden': 'true' })),
+      h('div', { class: 'recipe-detail-window-scroll' },
+        details,
+        sourceFoot)
+    ) : null;
+
+    s.content.replaceChildren(
+      h('div', { class: 'ref-detail-stage' }, card),
+      detailOverlay
+    );
   paint();
   const unsub = subscribe((t) => {
     if (skipPaint) return;
@@ -503,5 +507,5 @@ export function detailView({ id }, query) {
       paint();
     }
   });
-  return { el: s.el, destroy: () => { unsub(); if (notesDirty && notesEl) notesSave.flush(notesEl.value); if (expanded) document.body.classList.remove('no-tabs'); } };
+  return { el: s.el, destroy: () => { unsub(); if (notesDirty && notesEl) notesSave.flush(notesEl.value); document.body.classList.remove('no-tabs'); } };
 }
