@@ -133,12 +133,11 @@ async function main() {
     await assertAccessibleControls(page, hash);
   }
 
-  // Receptury UX: catalog is intentionally capped, cards show category/origin, and full details open separately.
+  // Receptury UX: reference card fills the screen; full details stay hidden until +N.
   await page.goto(BASE_URL + '#/recipes', { waitUntil: 'networkidle', timeout: 30000 });
   await sleep(250);
   const catalogState = await page.evaluate(() => ({
     cards: document.querySelectorAll('.recipe-catalog-card').length,
-    sources: document.querySelectorAll('.recipe-catalog-card .catalog-origin').length,
     categories: document.querySelectorAll('.recipe-catalog-card .catalog-category').length,
   }));
   console.log('RECIPE_CATALOG_CHECK', JSON.stringify(catalogState));
@@ -149,36 +148,23 @@ async function main() {
   if (firstRecipeHref) {
     await page.goto(BASE_URL + firstRecipeHref.replace(/^#/, ''), { waitUntil: 'networkidle', timeout: 30000 });
     await sleep(250);
-    if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Recipe did not open in fullscreen');
+    if (!(await page.locator('.recipe-reference-card').count())) throw new Error('Reference recipe card did not open');
+    if (await page.locator('.recipe-detail-window').count()) throw new Error('Recipe details opened before +N');
+    const cardBox = await page.locator('.recipe-reference-card').boundingBox();
+    if (!cardBox || cardBox.width < 360 || cardBox.height < 500) throw new Error('Reference recipe card is not large enough for fullscreen presentation');
+
     const plus = page.locator('.ref-ingredient-more').first();
     if (await plus.count()) {
       await plus.click();
       await sleep(250);
-      if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Ingredient +N did not open full recipe');
+      if (!(await page.locator('.recipe-detail-window').count())) throw new Error('Ingredient +N did not open detail window');
+      if (!(await page.locator('.recipe-detail-window').getByText('Przygotowanie', { exact: true }).count())) throw new Error('Detail window is missing preparation section');
       const fullscreenMode = await page.evaluate(() => document.body.classList.contains('no-tabs'));
-      if (!fullscreenMode) throw new Error('Full recipe did not use fullscreen mode');
-      if (!(await page.locator('.ref-details .ingredients').count())) throw new Error('Full recipe is missing ingredients');
-      if (!(await page.getByText('Przygotowanie', { exact: true }).count())) throw new Error('Full recipe is missing preparation section');
-    } else {
-      const idFromHref = firstRecipeHref.match(/recipe\/([^?]+)/)?.[1];
-      if (idFromHref) {
-        await page.goto(BASE_URL + '#/recipe/' + idFromHref + '?details=1', { waitUntil: 'networkidle', timeout: 30000 });
-        await sleep(250);
-        if (!(await page.locator('.recipe-fullscreen').count())) throw new Error('Direct full recipe route did not open fullscreen');
-      }
+      if (!fullscreenMode) throw new Error('Detail window did not enter fullscreen mode');
+      await page.getByRole('button', { name: 'Zamknij szczegóły' }).click();
+      await sleep(150);
+      if (await page.locator('.recipe-detail-window').count()) throw new Error('Detail window did not close');
     }
-  }
-
-  // +N opens details in a separate fullscreen window, not inline.
-  const plusButton = page.locator('.ref-ingredient-more').first();
-  if (await plusButton.count()) {
-    await plusButton.click();
-    await sleep(200);
-    if (!(await page.locator('.recipe-detail-window').count())) throw new Error('Recipe details window did not open');
-    if (!(await page.locator('.recipe-detail-window').getByText('Przygotowanie', { exact: true }).count())) throw new Error('Recipe details window missing preparation section');
-    await page.getByRole('button', { name: 'Zamknij szczegóły' }).click();
-    await sleep(150);
-    if (await page.locator('.recipe-detail-window').count()) throw new Error('Recipe details window did not close');
   }
 
   // Vertical scrolling regression: the app shell must scroll inside .scroll on iPhone.
