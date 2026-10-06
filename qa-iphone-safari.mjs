@@ -261,7 +261,7 @@ async function main() {
   });
   console.log('SW_CHECK', JSON.stringify(swState));
   if (!swState.controlled) throw new Error('Page is not controlled by Service Worker');
-  if (swState.version !== 'zarlok-2.2.4') throw new Error('Unexpected Service Worker version: ' + swState.version);
+  if (swState.version !== 'zarlok-2.2.6') throw new Error('Unexpected Service Worker version: ' + swState.version);
 
   // Offline reload: cached app must still boot and render the home route.
   errors.length = 0;
