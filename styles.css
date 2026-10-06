@@ -4606,3 +4606,294 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
 @media (prefers-reduced-motion: reduce) {
   .recipe-detail-window { animation: none; }
 }
+
+
+/* ==========================================================================
+   ŻARŁOK 2.2.6 · właściwy styl karty receptury
+   ========================================================================== */
+
+:root[data-theme="dark"] body,
+:root[data-theme="auto"] body {
+  background: #171719;
+}
+
+.recipes,
+.detail {
+  background:
+    radial-gradient(80% 28% at 50% 0%, rgba(255,196,104,.045), transparent 72%),
+    #171719;
+}
+
+/* Katalog: każda receptura ma być czytelna jak osobna karta, nie jak tabela. */
+.recipes .content {
+  max-width: 620px;
+  padding: 16px 12px 118px;
+}
+.recipes .list {
+  gap: 16px;
+  padding-top: 7px;
+}
+.recipe-catalog-card {
+  width: min(100%, 500px);
+  max-width: none;
+}
+.recipe-catalog-card .ref-card-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.095), rgba(255,255,255,.035)),
+    #343437;
+  border: 1px solid rgba(255,255,255,.13);
+  box-shadow:
+    0 24px 52px rgba(0,0,0,.38),
+    0 2px 0 rgba(255,255,255,.07) inset,
+    0 -18px 36px rgba(0,0,0,.08) inset;
+}
+.recipe-catalog-card .rcard-main {
+  text-decoration: none;
+}
+.recipe-catalog-card .catalog-photo {
+  height: 198px;
+  margin: 10px 10px 0;
+  border-radius: 23px;
+  box-shadow:
+    0 16px 30px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+.recipe-catalog-card .catalog-body {
+  padding: 14px 16px 17px;
+}
+.recipe-catalog-card .catalog-badges {
+  gap: 7px;
+}
+.recipe-catalog-card .catalog-category,
+.recipe-catalog-card .catalog-origin,
+.recipe-catalog-card .catalog-trad {
+  min-height: 27px;
+  padding: 0 9px;
+  font-size: .66rem;
+  background: rgba(0,0,0,.16);
+  border-color: rgba(255,255,255,.11);
+}
+.recipe-catalog-card .catalog-category {
+  background: rgba(255,186,83,.11);
+  border-color: rgba(255,194,92,.18);
+}
+.recipe-catalog-card .catalog-title {
+  margin-top: 9px;
+  font-size: 1.22rem;
+  font-weight: 830;
+}
+.recipe-catalog-card .catalog-meta {
+  margin-top: 9px;
+  font-size: .72rem;
+}
+.recipe-catalog-card .catalog-source {
+  margin-top: 9px;
+}
+.recipe-catalog-card .catalog-favorite {
+  top: 19px;
+  right: 19px;
+}
+.recipe-catalog-card .heart {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  background: rgba(18,18,19,.48);
+  border-color: rgba(255,255,255,.16);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Karta receptury: ramka praktycznie wypełnia dostępny ekran. */
+.detail .scroll {
+  padding: 0 0 calc(var(--tab-h) + var(--tab-gap) + 8px);
+}
+.detail .content {
+  max-width: none !important;
+  padding: 0 !important;
+}
+.ref-detail-stage {
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding:
+    max(10px, env(safe-area-inset-top, 0px))
+    8px
+    max(14px, env(safe-area-inset-bottom, 0px));
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(90% 50% at 50% 0%, rgba(255,191,95,.055), transparent 70%),
+    #171719;
+}
+.recipe-reference-card {
+  position: relative;
+  width: min(calc(100vw - 16px), 620px) !important;
+  height: min(calc(100dvh - 26px), 820px);
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    #454548;
+  border: 1px solid rgba(255,255,255,.13);
+  box-shadow:
+    0 32px 72px rgba(0,0,0,.48),
+    0 1px 0 rgba(255,255,255,.12) inset,
+    0 -30px 55px rgba(0,0,0,.12) inset;
+}
+.recipe-reference-photo {
+  flex: 0 0 36%;
+  width: calc(100% - 24px);
+  height: auto;
+  min-height: 230px;
+  margin: 12px auto 0;
+  border-radius: 24px;
+  box-shadow:
+    0 20px 36px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+.recipe-reference-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 15px 22px 18px;
+}
+.recipe-reference-top {
+  top: -245px;
+}
+.recipe-reference-kicker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ref-card-category-pill,
+.ref-card-origin-pill,
+.recipe-reference-kicker .ref-trad-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 27px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.15);
+  color: rgba(255,255,255,.70);
+  font-size: .66rem;
+  font-weight: 780;
+}
+.ref-card-category-pill {
+  color: #ffc261;
+  border-color: rgba(255,194,92,.18);
+  background: rgba(255,184,76,.10);
+}
+.ref-card-origin-pill {
+  color: rgba(255,255,255,.76);
+}
+.recipe-reference-title {
+  margin-top: 9px;
+  font-size: clamp(2rem, 8.5vw, 2.7rem);
+  line-height: .98;
+  letter-spacing: -.045em;
+  font-weight: 850;
+}
+.recipe-reference-meta {
+  margin-top: 9px;
+  color: rgba(255,255,255,.69);
+}
+.recipe-reference-desc {
+  margin-top: 10px;
+  color: rgba(255,255,255,.60);
+  font-size: .88rem;
+  line-height: 1.34;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.recipe-reference-ingredients {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.recipe-reference-primary {
+  margin-top: 12px;
+}
+.recipe-reference-primary .btn {
+  min-height: 56px;
+  border-radius: 19px;
+}
+.ref-ingredient-orb {
+  border: 1px solid rgba(255,255,255,.11);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+.ref-ingredient-more {
+  background: rgba(255,255,255,.055);
+}
+
+/* +N = osobne okno, nigdy treść pod kartą. */
+.recipe-detail-window {
+  z-index: 80;
+  background:
+    radial-gradient(100% 30% at 50% 0%, rgba(255,184,78,.10), transparent 72%),
+    rgba(20,20,22,.97);
+  animation: recipeWindowIn .28s cubic-bezier(.2,.8,.2,1) both;
+}
+.recipe-detail-window-scroll {
+  padding-top: 14px;
+}
+.recipe-detail-window .card {
+  border-radius: 23px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.065), rgba(255,255,255,.025)),
+    #2c2c2f;
+}
+.recipe-detail-window-head {
+  min-height: 61px;
+}
+.recipe-detail-window .ref-detail-stat {
+  background: rgba(255,255,255,.045);
+}
+@media (max-width: 390px) {
+  .recipe-reference-card {
+    width: calc(100vw - 12px) !important;
+    height: calc(100dvh - 18px);
+    border-radius: 29px;
+  }
+  .recipe-reference-photo {
+    flex-basis: 33%;
+    min-height: 205px;
+    width: calc(100% - 20px);
+  }
+  .recipe-reference-content {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .recipe-reference-title {
+    font-size: clamp(1.85rem, 9vw, 2.3rem);
+  }
+}
+
+/* Żarłok cards enter like a physical glass tile. */
+@media (prefers-reduced-motion: no-preference) {
+  .recipe-reference-card {
+    animation: referenceCardIn .30s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .recipe-catalog-card {
+    animation: catalogCardIn .25s cubic-bezier(.2,.8,.2,1) both;
+  }
+}
+@keyframes referenceCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes catalogCardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
