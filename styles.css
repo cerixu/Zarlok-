@@ -5614,3 +5614,37 @@ img {
     border-color: var(--rim);
   }
 }
+
+
+/* Final pass: spójne powierzchnie, czytelność i dotyk na iPhonie. */
+:root {
+  --zf-card-radius: 24px;
+  --zf-control-radius: 16px;
+  --zf-glass-border: rgba(255,255,255,.09);
+}
+.card, .tile, .bigcard, .rcard, .sr-card, .shop-list, .result,
+.rtile, .stat, .ing-edit, .step-edit, .sec-card, .pantry-item,
+.sub-card, .guide-card, .cook-row, .category-tile {
+  -webkit-tap-highlight-color: transparent;
+}
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+input, textarea, select {
+  max-width: 100%;
+}
+img {
+  image-rendering: auto;
+}
+@media (max-width: 430px) {
+  #view { min-width: 0; }
+  .screen { min-width: 0; }
+  .content { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .btn, button { -webkit-touch-callout: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .category-tile, .glass, .glass-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
